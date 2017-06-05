@@ -13,11 +13,15 @@ namespace client
     {
         const string dir = @"C:\From\";
         private ServerReference.IServer wcfClient;
+        private EndpointAddress endPoint;
 
         public Client()
         {
-            this.createChannel(this.setAddress());
-            Console.WriteLine(this.wcfClient.sendMessage("login", getComputerName());
+            this.createChannel();
+            wcfClient.sendMessage("login", new ServerReference.FileContract
+            {
+                IP = this.getIP()
+            });
             this.GetAllFiles(dir);
             this.SetFileWatcher();
             Console.ReadKey();
@@ -26,30 +30,31 @@ namespace client
         {
             return wcfClient;
         }
+        
 
-        private EndpointAddress setAddress()
+        private ServerReference.IServer createChannel()
         {
-            Console.WriteLine("Zaloguj się do Cloud Drive");
-            String adres = Console.ReadLine();
-
-            EndpointAddress myEndpoint = new EndpointAddress(adres);
-
-            //Dodać wyjątki że nie udało się zalogować
-            Console.WriteLine("Adres ustawiony");
-
-            return myEndpoint;
-        }
-
-        private ServerReference.IServer createChannel(EndpointAddress myEndpoint)
-        {
+            bool invalid = true;
             BasicHttpBinding myBinding = new BasicHttpBinding();
+            do
+            {
+                Console.WriteLine("Podaj adres serwera");
+                String adres = Console.ReadLine();
+                try
+                {
+                    endPoint = new EndpointAddress(adres);
+                    invalid = false;
+                }
+                catch
+                {
+                    Console.WriteLine("Zły adres, spróbuj ponownie");
+                }
+            } while (invalid);
 
-            ChannelFactory<ServerReference.IServer> myChannelFactory = new ChannelFactory<ServerReference.IServer>(myBinding, myEndpoint);
+            
+            ChannelFactory<ServerReference.IServer> myChannelFactory = new ChannelFactory<ServerReference.IServer>(myBinding, endPoint);
 
             wcfClient = myChannelFactory.CreateChannel();
-
-            //Dodać wyjątki że nie udało się utworzyć kanału
-            Console.WriteLine("Kanał utworzony");
 
             return wcfClient;
         }
@@ -84,6 +89,11 @@ namespace client
             return files;
         }
 
+        private void sendIp(string ip)
+        {
+
+        }
+
         private void SendFiles(List<string> files)
         {
             files.ForEach(file =>
@@ -100,22 +110,44 @@ namespace client
         {
             var watcher = new FileSystemWatcher();
             watcher.Path = dir;
-            watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName;
+            watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.DirectoryName;
             watcher.Filter = "*.*";
-            watcher.Created += (obj, e) =>
-            {
-                var files = this.GetAllFiles(dir);
-                this.SendFiles(files);
-            };
-            watcher.Changed += (obj, e) => { };
-            watcher.Deleted += (obj, e) => { };
+            watcher.Changed += new FileSystemEventHandler(OnChanged);
+            watcher.Created += new FileSystemEventHandler(OnChanged);
+            watcher.Deleted += new FileSystemEventHandler(OnChanged);
+            watcher.Renamed += new RenamedEventHandler(OnRenamed);
 
             watcher.EnableRaisingEvents = true;
+            watcher.IncludeSubdirectories = true;
         }
-        private String getComputerName()
+        private String getIP()
         {
-            string name = Environment.MachineName;
-            return name;
+            string hostName = Dns.GetHostName(); // Retrive the Name of HOST
+
+            // Get the IP
+            string myIP = Dns.GetHostByName(hostName).AddressList[0].ToString();
+
+            return myIP;
+        }
+
+        private void OnChanged(object source, FileSystemEventArgs e)
+        {
+            Console.WriteLine(e.ChangeType.ToString());
+            if (e.ChangeType.ToString() == "Created")
+            {
+                wcfClient.sendMessage("Created", new ServerReference.FileContract
+                {
+                    IP = this.getIP()
+                });
+                var files = this.GetAllFiles(dir);
+                this.SendFiles(files);
+            }
+
+        }
+
+        private void OnRenamed(object source, RenamedEventArgs e)
+        {
+            Console.WriteLine("File: {0} renamed to {1}", e.OldFullPath, e.FullPath);
         }
 
         static void Main(string[] args)

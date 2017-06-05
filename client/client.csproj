@@ -55,9 +55,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
-    <None Include="Service References\App.config">
-      <SubType>Designer</SubType>
-    </None>
     <None Include="Service References\ServerReference\Server.wsdl" />
     <None Include="Service References\ServerReference\service.xsd">
       <SubType>Designer</SubType>

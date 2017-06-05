@@ -28,6 +28,9 @@ namespace client.ServerReference {
         [System.Runtime.Serialization.OptionalFieldAttribute()]
         private string FilePathField;
         
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private string IPField;
+        
         [global::System.ComponentModel.BrowsableAttribute(false)]
         public System.Runtime.Serialization.ExtensionDataObject ExtensionData {
             get {
@@ -64,6 +67,19 @@ namespace client.ServerReference {
             }
         }
         
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public string IP {
+            get {
+                return this.IPField;
+            }
+            set {
+                if ((object.ReferenceEquals(this.IPField, value) != true)) {
+                    this.IPField = value;
+                    this.RaisePropertyChanged("IP");
+                }
+            }
+        }
+        
         public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
         
         protected void RaisePropertyChanged(string propertyName) {
@@ -79,16 +95,22 @@ namespace client.ServerReference {
     public interface IServer {
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IServer/sendMessage", ReplyAction="http://tempuri.org/IServer/sendMessageResponse")]
-        string sendMessage(string command, string value);
+        string sendMessage(string command, client.ServerReference.FileContract fc);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IServer/sendMessage", ReplyAction="http://tempuri.org/IServer/sendMessageResponse")]
-        System.Threading.Tasks.Task<string> sendMessageAsync(string command, string value);
+        System.Threading.Tasks.Task<string> sendMessageAsync(string command, client.ServerReference.FileContract fc);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IServer/SetFile", ReplyAction="http://tempuri.org/IServer/SetFileResponse")]
         void SetFile(client.ServerReference.FileContract fileContract);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IServer/SetFile", ReplyAction="http://tempuri.org/IServer/SetFileResponse")]
         System.Threading.Tasks.Task SetFileAsync(client.ServerReference.FileContract fileContract);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IServer/SendFile", ReplyAction="http://tempuri.org/IServer/SendFileResponse")]
+        void SendFile(client.ServerReference.FileContract fileContract);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IServer/SendFile", ReplyAction="http://tempuri.org/IServer/SendFileResponse")]
+        System.Threading.Tasks.Task SendFileAsync(client.ServerReference.FileContract fileContract);
     }
     
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
@@ -118,12 +140,12 @@ namespace client.ServerReference {
                 base(binding, remoteAddress) {
         }
         
-        public string sendMessage(string command, string value) {
-            return base.Channel.sendMessage(command, value);
+        public string sendMessage(string command, client.ServerReference.FileContract fc) {
+            return base.Channel.sendMessage(command, fc);
         }
         
-        public System.Threading.Tasks.Task<string> sendMessageAsync(string command, string value) {
-            return base.Channel.sendMessageAsync(command, value);
+        public System.Threading.Tasks.Task<string> sendMessageAsync(string command, client.ServerReference.FileContract fc) {
+            return base.Channel.sendMessageAsync(command, fc);
         }
         
         public void SetFile(client.ServerReference.FileContract fileContract) {
@@ -132,6 +154,14 @@ namespace client.ServerReference {
         
         public System.Threading.Tasks.Task SetFileAsync(client.ServerReference.FileContract fileContract) {
             return base.Channel.SetFileAsync(fileContract);
+        }
+        
+        public void SendFile(client.ServerReference.FileContract fileContract) {
+            base.Channel.SendFile(fileContract);
+        }
+        
+        public System.Threading.Tasks.Task SendFileAsync(client.ServerReference.FileContract fileContract) {
+            return base.Channel.SendFileAsync(fileContract);
         }
     }
 }

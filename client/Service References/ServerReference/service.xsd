@@ -5,7 +5,7 @@
     <xs:complexType>
       <xs:sequence>
         <xs:element minOccurs="0" name="command" nillable="true" type="xs:string" />
-        <xs:element minOccurs="0" name="value" nillable="true" type="xs:string" />
+        <xs:element xmlns:q1="http://schemas.datacontract.org/2004/07/server" minOccurs="0" name="fc" nillable="true" type="q1:FileContract" />
       </xs:sequence>
     </xs:complexType>
   </xs:element>
@@ -19,11 +19,23 @@
   <xs:element name="SetFile">
     <xs:complexType>
       <xs:sequence>
-        <xs:element xmlns:q1="http://schemas.datacontract.org/2004/07/server" minOccurs="0" name="fileContract" nillable="true" type="q1:FileContract" />
+        <xs:element xmlns:q2="http://schemas.datacontract.org/2004/07/server" minOccurs="0" name="fileContract" nillable="true" type="q2:FileContract" />
       </xs:sequence>
     </xs:complexType>
   </xs:element>
   <xs:element name="SetFileResponse">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="SendFile">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q3="http://schemas.datacontract.org/2004/07/server" minOccurs="0" name="fileContract" nillable="true" type="q3:FileContract" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="SendFileResponse">
     <xs:complexType>
       <xs:sequence />
     </xs:complexType>

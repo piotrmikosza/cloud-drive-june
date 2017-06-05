@@ -9,24 +9,29 @@ using System.IO;
 
 namespace server
 {
-    class Program
+    public class Program
     {
         static void Main(string[] args)
         {
             ServiceHost host = new ServiceHost(typeof(Server));
             host.Open();
-            Console.WriteLine("Server is ready...");
+            Console.WriteLine("Cloud Drive is ready...");
             Console.ReadKey();
         }
     }
+
     [ServiceContract]
     public interface IServer
     {
         [OperationContract]
-        String sendMessage(String command, String value);
+        String sendMessage(String command, FileContract fc);
 
         [OperationContract]
         void SetFile(FileContract fileContract);
+
+        [OperationContract]
+        void SendFile(FileContract fileContract);
+
     }
 
     [DataContract]
@@ -38,11 +43,24 @@ namespace server
         [DataMember]
         public string FilePath { get; set; }
 
+        [DataMember]
+        public string IP { get; set; }
+
         public string FileName
         {
             get
             {
                 return Path.GetFileName(this.FilePath);
+            }
+        }
+
+        public List<string> Clients
+        {
+            get
+            {
+                Clients.Add(this.IP);
+
+                return Clients;
             }
         }
     }
@@ -51,14 +69,27 @@ namespace server
     {
         const string dir = @"C:\To\";
 
-        public String sendMessage(String command, String value)
+
+        public void SendFile(FileContract fileContract)
+        {
+            throw new NotImplementedException();
+        }
+
+        public String sendMessage(string command, FileContract fc)
         {
             string response = "";
             switch (command)
             {
                 case "login":
-                    response = "Zalogowano pomyślnie !";
-                    Console.WriteLine("Użytkownik o nazwie " + value + " zalogował się do serwera");
+                    Console.WriteLine(fc.IP);
+                    Console.WriteLine("Login");
+                    fc.Clients.ForEach(Console.WriteLine);
+                    Console.WriteLine("End Login");
+                    break;
+                case "Created":
+                    Console.WriteLine("Created");
+                    fc.Clients.ForEach(Console.WriteLine);
+                    Console.WriteLine("End Created");
                     break;
             }
             return response;
@@ -75,6 +106,7 @@ namespace server
             }
 
             File.WriteAllBytes(path, fileContract.Bytes);
+
         }
     }
 }
