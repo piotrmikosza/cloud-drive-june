@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.ServiceModel;
 using System.Runtime.Serialization;
 using System.IO;
@@ -24,14 +20,11 @@ namespace server
     public interface IServer
     {
         [OperationContract]
-        String sendMessage(String command, FileContract fc);
+        String sendMessage(string command, string value);
 
         [OperationContract]
         void SetFile(FileContract fileContract);
-
-        [OperationContract]
-        void SendFile(FileContract fileContract);
-
+    
     }
 
     [DataContract]
@@ -43,24 +36,11 @@ namespace server
         [DataMember]
         public string FilePath { get; set; }
 
-        [DataMember]
-        public string IP { get; set; }
-
         public string FileName
         {
             get
             {
                 return Path.GetFileName(this.FilePath);
-            }
-        }
-
-        public List<string> Clients
-        {
-            get
-            {
-                Clients.Add(this.IP);
-
-                return Clients;
             }
         }
     }
@@ -69,27 +49,26 @@ namespace server
     {
         const string dir = @"C:\To\";
 
-
-        public void SendFile(FileContract fileContract)
-        {
-            throw new NotImplementedException();
-        }
-
-        public String sendMessage(string command, FileContract fc)
+        public String sendMessage(string command, string value)
         {
             string response = "";
             switch (command)
             {
                 case "login":
-                    Console.WriteLine(fc.IP);
-                    Console.WriteLine("Login");
-                    fc.Clients.ForEach(Console.WriteLine);
-                    Console.WriteLine("End Login");
+                    response = "Zalogowano";
+                    Console.WriteLine("Połączył się user o adresie " + value);
                     break;
-                case "Created":
-                    Console.WriteLine("Created");
-                    fc.Clients.ForEach(Console.WriteLine);
-                    Console.WriteLine("End Created");
+                case "logout":
+                    Console.WriteLine("Rozłączył się user o adresie " + value);
+                    break;
+                case "add":
+                    break;
+                case "delete":
+                    response = @"C:\From\plik.txt";
+                    break;
+                case "edit":
+                    break;
+                case "rename":
                     break;
             }
             return response;
@@ -106,7 +85,6 @@ namespace server
             }
 
             File.WriteAllBytes(path, fileContract.Bytes);
-
         }
     }
 }

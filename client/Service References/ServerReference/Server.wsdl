@@ -19,12 +19,6 @@
   <wsdl:message name="IServer_SetFile_OutputMessage">
     <wsdl:part name="parameters" element="tns:SetFileResponse" />
   </wsdl:message>
-  <wsdl:message name="IServer_SendFile_InputMessage">
-    <wsdl:part name="parameters" element="tns:SendFile" />
-  </wsdl:message>
-  <wsdl:message name="IServer_SendFile_OutputMessage">
-    <wsdl:part name="parameters" element="tns:SendFileResponse" />
-  </wsdl:message>
   <wsdl:portType name="IServer">
     <wsdl:operation name="sendMessage">
       <wsdl:input wsaw:Action="http://tempuri.org/IServer/sendMessage" message="tns:IServer_sendMessage_InputMessage" />
@@ -33,10 +27,6 @@
     <wsdl:operation name="SetFile">
       <wsdl:input wsaw:Action="http://tempuri.org/IServer/SetFile" message="tns:IServer_SetFile_InputMessage" />
       <wsdl:output wsaw:Action="http://tempuri.org/IServer/SetFileResponse" message="tns:IServer_SetFile_OutputMessage" />
-    </wsdl:operation>
-    <wsdl:operation name="SendFile">
-      <wsdl:input wsaw:Action="http://tempuri.org/IServer/SendFile" message="tns:IServer_SendFile_InputMessage" />
-      <wsdl:output wsaw:Action="http://tempuri.org/IServer/SendFileResponse" message="tns:IServer_SendFile_OutputMessage" />
     </wsdl:operation>
   </wsdl:portType>
   <wsdl:binding name="BasicHttpBinding_IServer" type="tns:IServer">
@@ -52,15 +42,6 @@
     </wsdl:operation>
     <wsdl:operation name="SetFile">
       <soap:operation soapAction="http://tempuri.org/IServer/SetFile" style="document" />
-      <wsdl:input>
-        <soap:body use="literal" />
-      </wsdl:input>
-      <wsdl:output>
-        <soap:body use="literal" />
-      </wsdl:output>
-    </wsdl:operation>
-    <wsdl:operation name="SendFile">
-      <soap:operation soapAction="http://tempuri.org/IServer/SendFile" style="document" />
       <wsdl:input>
         <soap:body use="literal" />
       </wsdl:input>

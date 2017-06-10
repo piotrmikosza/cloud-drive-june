@@ -4,7 +4,6 @@
     <xs:sequence>
       <xs:element minOccurs="0" name="Bytes" nillable="true" type="xs:base64Binary" />
       <xs:element minOccurs="0" name="FilePath" nillable="true" type="xs:string" />
-      <xs:element minOccurs="0" name="IP" nillable="true" type="xs:string" />
     </xs:sequence>
   </xs:complexType>
   <xs:element name="FileContract" nillable="true" type="tns:FileContract" />

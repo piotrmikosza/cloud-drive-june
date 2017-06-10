@@ -1,73 +1,78 @@
-﻿using System;
+﻿using client.ServerReference;
+using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.ServiceModel;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace client
 {
     public class Client
     {
         const string dir = @"C:\From\";
-        private ServerReference.IServer wcfClient;
+        private IServer wcfClient;
         private EndpointAddress endPoint;
+        private BasicHttpBinding myBinding;
+        private ChannelFactory<IServer> myChannelFactory;
+        private List<string> files;
+        bool isItConnected = false;
 
         public Client()
         {
-            this.createChannel();
-            wcfClient.sendMessage("login", new ServerReference.FileContract
+            
+            this.CreateChannel();
+       
+            if(isItConnected)
             {
-                IP = this.getIP()
-            });
+                this.SetFileWatcher();
+            }
             this.GetAllFiles(dir);
-            this.SetFileWatcher();
+           
             Console.ReadKey();
         }
-        private ServerReference.IServer getWcfClient()
-        {
-            return wcfClient;
-        }
         
-
-        private ServerReference.IServer createChannel()
+        private IServer CreateChannel()
         {
             bool invalid = true;
-            BasicHttpBinding myBinding = new BasicHttpBinding();
+            string adres;
+
+            myBinding = new BasicHttpBinding();
+
             do
             {
-                Console.WriteLine("Podaj adres serwera");
-                String adres = Console.ReadLine();
+                //Console.WriteLine("Podaj adres serwera \n");
+                //adres = Console.ReadLine();
                 try
                 {
-                    endPoint = new EndpointAddress(adres);
+                    endPoint = new EndpointAddress("http://piotr-komputer/service");
+                    myChannelFactory = new ChannelFactory<IServer>(myBinding, endPoint);
+                    wcfClient = myChannelFactory.CreateChannel();
+
+                    Console.WriteLine(this.wcfClient.sendMessage(("login"), this.getIP()));
+
                     invalid = false;
                 }
-                catch
+                catch (UriFormatException ce)
                 {
-                    Console.WriteLine("Zły adres, spróbuj ponownie");
+                    Console.WriteLine(ce.Message + "\n");
+                    invalid = true;
                 }
+                catch (EndpointNotFoundException ce)
+                {
+                    Console.WriteLine(ce.Message + "\n");
+                    invalid = true;
+                }
+
             } while (invalid);
 
-            
-            ChannelFactory<ServerReference.IServer> myChannelFactory = new ChannelFactory<ServerReference.IServer>(myBinding, endPoint);
-
-            wcfClient = myChannelFactory.CreateChannel();
+            isItConnected = true;
 
             return wcfClient;
-        }
-
-        private void closeChannel()
-        {
-            ((IClientChannel)this.wcfClient).Close();
-            Console.WriteLine("Kanał zamknięty");
         }
 
         private List<string> GetAllFiles(string sDirt)
         {
-            List<string> files = new List<string>();
+            files = new List<string>();
 
             try
             {
@@ -89,23 +94,19 @@ namespace client
             return files;
         }
 
-        private void sendIp(string ip)
-        {
-
-        }
-
         private void SendFiles(List<string> files)
         {
             files.ForEach(file =>
             {
                 var bytes = File.ReadAllBytes(file);
-                wcfClient.SetFile(new ServerReference.FileContract
+                wcfClient.SetFile(new FileContract
                 {
                     Bytes = bytes,
                     FilePath = file.Substring(dir.Length)
                 });
             });
         }
+
         private void SetFileWatcher()
         {
             var watcher = new FileSystemWatcher();
@@ -120,6 +121,66 @@ namespace client
             watcher.EnableRaisingEvents = true;
             watcher.IncludeSubdirectories = true;
         }
+
+        private void DeleteFile(string path)
+        {
+            if(files.Contains(path))
+            {
+                Console.WriteLine("Usunięto plik " + path);
+                File.Delete(path);
+                files.Remove(path);
+            }
+        }
+
+        private void DeleteDirectory(string path)
+        {
+            if(files.Contains(path))
+            {
+                Console.WriteLine("Usunięto folder" + path);
+                Directory.Delete(path, true);
+                files.Remove(path);
+            }
+        }
+
+        private bool isItDirectory(string path)
+        {
+            FileAttributes attr = File.GetAttributes(path);
+
+            if ((attr & FileAttributes.Directory) == FileAttributes.Directory)
+                return true;
+            else
+                return false;
+        }
+
+        private void OnChanged(object source, FileSystemEventArgs e)
+        {
+            if(e.ChangeType.ToString() == "Created")
+            {
+
+                Console.WriteLine("Utworzono plik");
+                files = this.GetAllFiles(dir);
+                this.SendFiles(files);
+            }
+            if(e.ChangeType.ToString() == "Deleted")
+            {
+                if(this.isItDirectory(e.FullPath))
+                {
+                    this.DeleteDirectory(this.wcfClient.sendMessage("delete", e.FullPath))
+                } else
+                {
+                    this.DeleteFile(this.wcfClient.sendMessage("delete", e.FullPath))
+                }
+            }
+            if (e.ChangeType.ToString() == "Changed")
+            {
+            }
+        }
+
+        private void OnRenamed(object source, RenamedEventArgs e)
+        {
+            Console.WriteLine("File: {0} renamed to {1}", e.OldFullPath, e.FullPath);
+        }
+
         private String getIP()
         {
             string hostName = Dns.GetHostName(); // Retrive the Name of HOST
@@ -130,24 +191,9 @@ namespace client
             return myIP;
         }
 
-        private void OnChanged(object source, FileSystemEventArgs e)
+        private void CloseChannel()
         {
-            Console.WriteLine(e.ChangeType.ToString());
-            if (e.ChangeType.ToString() == "Created")
-            {
-                wcfClient.sendMessage("Created", new ServerReference.FileContract
-                {
-                    IP = this.getIP()
-                });
-                var files = this.GetAllFiles(dir);
-                this.SendFiles(files);
-            }
-
-        }
-
-        private void OnRenamed(object source, RenamedEventArgs e)
-        {
-            Console.WriteLine("File: {0} renamed to {1}", e.OldFullPath, e.FullPath);
+            ((IClientChannel)this.wcfClient).Close();
         }
 
         static void Main(string[] args)
