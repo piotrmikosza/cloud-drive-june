@@ -1,4 +1,4 @@
-﻿using client.ServerReference;
+﻿using client.ServiceReference1;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -26,15 +26,14 @@ namespace client
             {
                 this.SetFileWatcher();
             }
-            this.GetAllFiles(dir);
-           
+
             Console.ReadKey();
         }
         
         private IServer CreateChannel()
         {
             bool invalid = true;
-            string adres;
+            //string adres;
 
             myBinding = new BasicHttpBinding();
 
@@ -47,8 +46,6 @@ namespace client
                     endPoint = new EndpointAddress("http://piotr-komputer/service");
                     myChannelFactory = new ChannelFactory<IServer>(myBinding, endPoint);
                     wcfClient = myChannelFactory.CreateChannel();
-
-                    Console.WriteLine(this.wcfClient.sendMessage(("login"), this.getIP()));
 
                     invalid = false;
                 }
@@ -94,16 +91,23 @@ namespace client
             return files;
         }
 
-        private void SendFiles(List<string> files)
+        private void SendFile(string file)
         {
-            files.ForEach(file =>
+            var bytes = File.ReadAllBytes(file);
+            wcfClient.SetFile(new FileContract
             {
-                var bytes = File.ReadAllBytes(file);
-                wcfClient.SetFile(new FileContract
-                {
-                    Bytes = bytes,
-                    FilePath = file.Substring(dir.Length)
-                });
+                FileStatus = Status.New,
+                Bytes = bytes,
+                FilePath = file.Substring(dir.Length)
+            });
+        }
+
+        private void DeleteFile(string file)
+        {
+            wcfClient.SetFile(new FileContract
+            {
+                FileStatus = Status.Deleted,
+                FilePath = file.Substring(dir.Length)
             });
         }
 
@@ -122,26 +126,6 @@ namespace client
             watcher.IncludeSubdirectories = true;
         }
 
-        private void DeleteFile(string path)
-        {
-            if(files.Contains(path))
-            {
-                Console.WriteLine("Usunięto plik " + path);
-                File.Delete(path);
-                files.Remove(path);
-            }
-        }
-
-        private void DeleteDirectory(string path)
-        {
-            if(files.Contains(path))
-            {
-                Console.WriteLine("Usunięto folder" + path);
-                Directory.Delete(path, true);
-                files.Remove(path);
-            }
-        }
-
         private bool isItDirectory(string path)
         {
             FileAttributes attr = File.GetAttributes(path);
@@ -156,20 +140,11 @@ namespace client
         {
             if(e.ChangeType.ToString() == "Created")
             {
-
-                Console.WriteLine("Utworzono plik");
-                files = this.GetAllFiles(dir);
-                this.SendFiles(files);
+                this.SendFile(e.FullPath);
             }
-            if(e.ChangeType.ToString() == "Deleted")
+            if (e.ChangeType.ToString() == "Deleted")
             {
-                if(this.isItDirectory(e.FullPath))
-                {
-                    this.DeleteDirectory(this.wcfClient.sendMessage("delete", e.FullPath))
-                } else
-                {
-                    this.DeleteFile(this.wcfClient.sendMessage("delete", e.FullPath))
-                }
+                this.DeleteFile(e.FullPath);
             }
             if (e.ChangeType.ToString() == "Changed")
             {
@@ -191,14 +166,12 @@ namespace client
             return myIP;
         }
 
-        private void CloseChannel()
-        {
-            ((IClientChannel)this.wcfClient).Close();
-        }
 
         static void Main(string[] args)
         {
-            new Client();            
+
+            new Client();
+
         }
 
     }
