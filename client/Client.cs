@@ -1,5 +1,6 @@
 ﻿using client.ServiceReference1;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -12,9 +13,9 @@ namespace client
         const string dir = @"C:\From\";
         private IServer wcfClient;
         private EndpointAddress endPoint;
-        private BasicHttpBinding myBinding;
         private ChannelFactory<IServer> myChannelFactory;
         private List<string> files;
+        private DateTime date;
         bool isItConnected = false;
 
         public Client()
@@ -27,6 +28,38 @@ namespace client
                 this.SetFileWatcher();
             }
 
+            do
+            {
+                if (Console.ReadKey(true).Key == ConsoleKey.F1)
+                {
+                    this.SendFiles(this.GetAllFiles(dir));
+                }
+                if (Console.ReadKey(true).Key == ConsoleKey.F2)
+                {
+                    IList<FileContract> fb =  wcfClient.GetFiles(date);
+
+                    foreach(FileContract fc in fb)
+                    {
+                        Console.WriteLine(fc.FilePath + " " + fc.FileStatus);
+                        var path = Path.Combine(dir, fc.FilePath);
+
+                        if (fc.FileStatus == Status.New)
+                        {
+                            File.WriteAllBytes(path, fc.Bytes);
+                        }
+                        if (fc.FileStatus == Status.Deleted)
+                        {
+                            Console.WriteLine("Path " + path);
+                            Console.WriteLine("Weszło w DELETED");
+                            File.Delete(path);
+                        }
+
+                    }
+
+                }
+            } while (Console.ReadKey(true).Key != ConsoleKey.F12);
+
+
             Console.ReadKey();
         }
         
@@ -35,7 +68,7 @@ namespace client
             bool invalid = true;
             //string adres;
 
-            myBinding = new BasicHttpBinding();
+            BasicHttpBinding myBinding = new BasicHttpBinding();
 
             do
             {
@@ -43,7 +76,7 @@ namespace client
                 //adres = Console.ReadLine();
                 try
                 {
-                    endPoint = new EndpointAddress("http://piotr-komputer/service");
+                    endPoint = new EndpointAddress("http://192.168.1.100/service");
                     myChannelFactory = new ChannelFactory<IServer>(myBinding, endPoint);
                     wcfClient = myChannelFactory.CreateChannel();
 
@@ -91,15 +124,20 @@ namespace client
             return files;
         }
 
-        private void SendFile(string file)
+        private void SendFiles(List<string> files)
         {
-            var bytes = File.ReadAllBytes(file);
-            wcfClient.SetFile(new FileContract
+
+            files.ForEach(file =>
             {
-                FileStatus = Status.New,
-                Bytes = bytes,
-                FilePath = file.Substring(dir.Length)
+                var bytes = File.ReadAllBytes(file);
+                wcfClient.SetFile(new FileContract
+                {
+                    FileStatus = Status.New,
+                    Bytes = bytes,
+                    FilePath = file.Substring(dir.Length)
+                });
             });
+
         }
 
         private void DeleteFile(string file)
@@ -140,10 +178,11 @@ namespace client
         {
             if(e.ChangeType.ToString() == "Created")
             {
-                this.SendFile(e.FullPath);
+                date = DateTime.Now;
             }
             if (e.ChangeType.ToString() == "Deleted")
             {
+                date = DateTime.Now;
                 this.DeleteFile(e.FullPath);
             }
             if (e.ChangeType.ToString() == "Changed")

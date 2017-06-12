@@ -4,6 +4,7 @@ using System.Runtime.Serialization;
 using System.IO;
 using System.Timers;
 using System.Collections.Generic;
+using System.Text;
 using System.Linq;
 
 namespace server
@@ -24,6 +25,9 @@ namespace server
     {
         [OperationContract]
         void SetFile(FileContract fileContract);
+
+        [OperationContract]
+        IList<FileContract> GetFiles(DateTime LastModification);
     }
 
     // Use a data contract as illustrated in the sample below to add composite types to service operations.
@@ -123,6 +127,11 @@ namespace server
         {
             var path = Path.Combine(dir, fileContract.FilePath);
             var dirname = Path.GetDirectoryName(path);
+
+            Console.WriteLine("fC.FilePath " + fileContract.FilePath);
+            Console.WriteLine("Path " + path);
+            Console.WriteLine("Dirname " + dirname);
+
             if (!Directory.Exists(dirname))
             {
                 Directory.CreateDirectory(path);
