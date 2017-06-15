@@ -182,17 +182,23 @@ namespace client.ServiceReference1 {
     [System.ServiceModel.ServiceContractAttribute(ConfigurationName="ServiceReference1.IServer")]
     public interface IServer {
         
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IServer/GetFiles", ReplyAction="http://tempuri.org/IServer/GetFilesResponse")]
+        client.ServiceReference1.FileContract[] GetFiles(System.DateTime lastModification);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IServer/GetFiles", ReplyAction="http://tempuri.org/IServer/GetFilesResponse")]
+        System.Threading.Tasks.Task<client.ServiceReference1.FileContract[]> GetFilesAsync(System.DateTime lastModification);
+        
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IServer/SetFile", ReplyAction="http://tempuri.org/IServer/SetFileResponse")]
         void SetFile(client.ServiceReference1.FileContract fileContract);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IServer/SetFile", ReplyAction="http://tempuri.org/IServer/SetFileResponse")]
         System.Threading.Tasks.Task SetFileAsync(client.ServiceReference1.FileContract fileContract);
         
-        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IServer/GetFiles", ReplyAction="http://tempuri.org/IServer/GetFilesResponse")]
-        client.ServiceReference1.FileContract[] GetFiles(System.DateTime LastModification);
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IServer/SendMessage", ReplyAction="http://tempuri.org/IServer/SendMessageResponse")]
+        string SendMessage(string command, string value);
         
-        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IServer/GetFiles", ReplyAction="http://tempuri.org/IServer/GetFilesResponse")]
-        System.Threading.Tasks.Task<client.ServiceReference1.FileContract[]> GetFilesAsync(System.DateTime LastModification);
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IServer/SendMessage", ReplyAction="http://tempuri.org/IServer/SendMessageResponse")]
+        System.Threading.Tasks.Task<string> SendMessageAsync(string command, string value);
     }
     
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
@@ -222,6 +228,14 @@ namespace client.ServiceReference1 {
                 base(binding, remoteAddress) {
         }
         
+        public client.ServiceReference1.FileContract[] GetFiles(System.DateTime lastModification) {
+            return base.Channel.GetFiles(lastModification);
+        }
+        
+        public System.Threading.Tasks.Task<client.ServiceReference1.FileContract[]> GetFilesAsync(System.DateTime lastModification) {
+            return base.Channel.GetFilesAsync(lastModification);
+        }
+        
         public void SetFile(client.ServiceReference1.FileContract fileContract) {
             base.Channel.SetFile(fileContract);
         }
@@ -230,12 +244,12 @@ namespace client.ServiceReference1 {
             return base.Channel.SetFileAsync(fileContract);
         }
         
-        public client.ServiceReference1.FileContract[] GetFiles(System.DateTime LastModification) {
-            return base.Channel.GetFiles(LastModification);
+        public string SendMessage(string command, string value) {
+            return base.Channel.SendMessage(command, value);
         }
         
-        public System.Threading.Tasks.Task<client.ServiceReference1.FileContract[]> GetFilesAsync(System.DateTime LastModification) {
-            return base.Channel.GetFilesAsync(LastModification);
+        public System.Threading.Tasks.Task<string> SendMessageAsync(string command, string value) {
+            return base.Channel.SendMessageAsync(command, value);
         }
     }
 }

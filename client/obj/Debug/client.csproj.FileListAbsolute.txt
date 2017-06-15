@@ -3,6 +3,16 @@ C:\Users\Piotr\Documents\Visual Studio 2015\Projects\server\client\bin\Debug\cli
 C:\Users\Piotr\Documents\Visual Studio 2015\Projects\server\client\bin\Debug\client.pdb
 C:\Users\Piotr\Documents\Visual Studio 2015\Projects\server\client\obj\Debug\client.exe
 C:\Users\Piotr\Documents\Visual Studio 2015\Projects\server\client\obj\Debug\client.pdb
+C:\Users\piotr.mikosza\Desktop\cloud-drive-june-master\client\bin\Debug\client.exe.config
+C:\Users\piotr.mikosza\Desktop\cloud-drive-june-master\client\bin\Debug\client.exe
+C:\Users\piotr.mikosza\Desktop\cloud-drive-june-master\client\bin\Debug\client.pdb
+C:\Users\piotr.mikosza\Desktop\cloud-drive-june-master\client\obj\Debug\client.exe
+C:\Users\piotr.mikosza\Desktop\cloud-drive-june-master\client\obj\Debug\client.pdb
+C:\Users\piotr.mikosza\Desktop\drive\client\bin\Debug\client.exe.config
+C:\Users\piotr.mikosza\Desktop\drive\client\obj\Debug\client.exe
+C:\Users\piotr.mikosza\Desktop\drive\client\obj\Debug\client.pdb
+C:\Users\piotr.mikosza\Desktop\drive\client\bin\Debug\client.exe
+C:\Users\piotr.mikosza\Desktop\drive\client\bin\Debug\client.pdb
 C:\Users\Piotr\Desktop\server\client\bin\Debug\client.exe.config
 C:\Users\Piotr\Desktop\server\client\bin\Debug\client.exe
 C:\Users\Piotr\Desktop\server\client\bin\Debug\client.pdb

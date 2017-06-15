@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ReferenceGroup xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" ID="e62ceb68-49bc-4632-ba84-f9d1d43f2d86" xmlns="urn:schemas-microsoft-com:xml-wcfservicemap">
+<ReferenceGroup xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" ID="e99f8f74-ea12-4f22-bb36-2bcf2c2a8091" xmlns="urn:schemas-microsoft-com:xml-wcfservicemap">
   <ClientOptions>
     <GenerateAsynchronousMethods>false</GenerateAsynchronousMethods>
     <GenerateTaskBasedAsynchronousMethod>true</GenerateTaskBasedAsynchronousMethod>
@@ -19,14 +19,14 @@
     <ServiceContractMappings />
   </ClientOptions>
   <MetadataSources>
-    <MetadataSource Address="http://192.168.1.100/service" Protocol="http" SourceId="1" />
+    <MetadataSource Address="http://piotr-komputer/service" Protocol="http" SourceId="1" />
   </MetadataSources>
   <Metadata>
-    <MetadataFile FileName="service.disco" MetadataType="Disco" ID="dfe6b383-427a-4599-88bd-6b2273c94fe2" SourceId="1" SourceUrl="http://192.168.1.100/service?disco" />
-    <MetadataFile FileName="service.xsd" MetadataType="Schema" ID="aa2cd578-c9ee-41f5-8b98-a58682532dfb" SourceId="1" SourceUrl="http://192.168.1.100/service?xsd=xsd1" />
-    <MetadataFile FileName="Server.wsdl" MetadataType="Wsdl" ID="5c05ab85-2fcf-4d42-98f5-35ae1bd1b065" SourceId="1" SourceUrl="http://192.168.1.100/service?wsdl" />
-    <MetadataFile FileName="service1.xsd" MetadataType="Schema" ID="2266f127-2ab2-4267-9d54-4ee5e8d5fd42" SourceId="1" SourceUrl="http://192.168.1.100/service?xsd=xsd2" />
-    <MetadataFile FileName="service2.xsd" MetadataType="Schema" ID="e4ad0a0d-a706-4bb0-97e2-f3c41a6d4b09" SourceId="1" SourceUrl="http://192.168.1.100/service?xsd=xsd0" />
+    <MetadataFile FileName="service1.disco" MetadataType="Disco" ID="447693e3-5440-4dcb-93a6-ac773123e210" SourceId="1" SourceUrl="http://piotr-komputer/service?disco" />
+    <MetadataFile FileName="Server1.wsdl" MetadataType="Wsdl" ID="ab4a1ad7-e6f8-407d-ad9f-7ff111088f3a" SourceId="1" SourceUrl="http://piotr-komputer/service?wsdl" />
+    <MetadataFile FileName="service3.xsd" MetadataType="Schema" ID="db23852c-8808-404a-b6f4-7b3fa3eea05e" SourceId="1" SourceUrl="http://piotr-komputer/service?xsd=xsd2" />
+    <MetadataFile FileName="service31.xsd" MetadataType="Schema" ID="e072d60a-577d-44da-96d5-5f12068e9f5f" SourceId="1" SourceUrl="http://piotr-komputer/service?xsd=xsd0" />
+    <MetadataFile FileName="service32.xsd" MetadataType="Schema" ID="98542dc8-95ba-46bc-acd6-d249d783e731" SourceId="1" SourceUrl="http://piotr-komputer/service?xsd=xsd1" />
   </Metadata>
   <Extensions>
     <ExtensionFile FileName="configuration91.svcinfo" Name="configuration91.svcinfo" />

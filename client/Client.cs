@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.ServiceModel;
+using System.Text;
+using System.Linq;
 
 namespace client
 {
@@ -14,56 +16,37 @@ namespace client
         private IServer wcfClient;
         private EndpointAddress endPoint;
         private ChannelFactory<IServer> myChannelFactory;
-        private List<string> files;
-        private DateTime date;
+        private List<string> files = new List<string>();
+        private IList<FileContract> listFileContract;
+        private static DateTime lastModificationDate;
         bool isItConnected = false;
 
         public Client()
         {
             
-            this.CreateChannel();
+            this.ConnectToService();
        
             if(isItConnected)
             {
+                //this.GetAllFiles(dir);
                 this.SetFileWatcher();
+                Console.ReadKey();
+
+                /*foreach (FileContract fileContract in this.GetListFileContract())
+                {
+                    Console.WriteLine(fileContract.FilePath + " " + fileContract.FileStatus);
+                    var path = Path.Combine(dir, fileContract.FilePath);
+                    if (fileContract.FileStatus == Status.New)
+                    {
+                        File.WriteAllBytes(path, fileContract.Bytes);
+                    }
+                }*/
+
             }
 
-            do
-            {
-                if (Console.ReadKey(true).Key == ConsoleKey.F1)
-                {
-                    this.SendFiles(this.GetAllFiles(dir));
-                }
-                if (Console.ReadKey(true).Key == ConsoleKey.F2)
-                {
-                    IList<FileContract> fb =  wcfClient.GetFiles(date);
-
-                    foreach(FileContract fc in fb)
-                    {
-                        Console.WriteLine(fc.FilePath + " " + fc.FileStatus);
-                        var path = Path.Combine(dir, fc.FilePath);
-
-                        if (fc.FileStatus == Status.New)
-                        {
-                            File.WriteAllBytes(path, fc.Bytes);
-                        }
-                        if (fc.FileStatus == Status.Deleted)
-                        {
-                            Console.WriteLine("Path " + path);
-                            Console.WriteLine("Weszło w DELETED");
-                            File.Delete(path);
-                        }
-
-                    }
-
-                }
-            } while (Console.ReadKey(true).Key != ConsoleKey.F12);
-
-
-            Console.ReadKey();
         }
-        
-        private IServer CreateChannel()
+
+        private IServer ConnectToService()
         {
             bool invalid = true;
             //string adres;
@@ -76,10 +59,11 @@ namespace client
                 //adres = Console.ReadLine();
                 try
                 {
-                    endPoint = new EndpointAddress("http://192.168.1.100/service");
+                    endPoint = new EndpointAddress("http://piotr-komputer/service");
+                    //endPoint = new EndpointAddress(adres);
                     myChannelFactory = new ChannelFactory<IServer>(myBinding, endPoint);
                     wcfClient = myChannelFactory.CreateChannel();
-
+                    Console.WriteLine(wcfClient.SendMessage("login", this.getIP()));
                     invalid = false;
                 }
                 catch (UriFormatException ce)
@@ -100,17 +84,35 @@ namespace client
             return wcfClient;
         }
 
-        private List<string> GetAllFiles(string sDirt)
+        private IList<FileContract> GetListFileContract()
         {
-            files = new List<string>();
+            listFileContract = wcfClient.GetFiles(this.GetLastModificationDate(this.files));
+            return listFileContract;
+        }
 
+        private DateTime GetLastModificationDate(List<string> files)
+        {
+            List<DateTime> dates = new List<DateTime>();
+
+            foreach (string file in files)
+            {
+                dates.Add(File.GetLastWriteTime(file));
+            }
+
+            lastModificationDate = dates.Max();
+
+            return lastModificationDate;
+        }
+
+        private List<string> GetAllFiles(string sourceDir)
+        {
             try
             {
-                foreach (string file in Directory.GetFiles(sDirt))
+                foreach (string file in Directory.GetFiles(sourceDir))
                 {
                     files.Add(file);
                 }
-                foreach (string fl in Directory.GetDirectories(sDirt))
+                foreach (string fl in Directory.GetDirectories(sourceDir))
                 {
                     files.AddRange(GetAllFiles(fl));
                 }
@@ -126,7 +128,6 @@ namespace client
 
         private void SendFiles(List<string> files)
         {
-
             files.ForEach(file =>
             {
                 var bytes = File.ReadAllBytes(file);
@@ -137,7 +138,18 @@ namespace client
                     FilePath = file.Substring(dir.Length)
                 });
             });
+        }
 
+        private void SendFile(string file)
+        {
+            var bytes = File.ReadAllBytes(file);
+            wcfClient.SetFile(new FileContract
+            {
+                FileStatus = Status.New,
+                Bytes = bytes,
+                FilePath = file.Substring(dir.Length)
+            });
+            files.Add(file);
         }
 
         private void DeleteFile(string file)
@@ -147,6 +159,44 @@ namespace client
                 FileStatus = Status.Deleted,
                 FilePath = file.Substring(dir.Length)
             });
+        }
+
+        private void DeleteFiles(string directory)
+        {
+            bool itIsDirectory = false;
+
+            foreach (string file in files)
+            {
+                if(file.Equals(directory))
+                {
+                    itIsDirectory = false;
+                    wcfClient.SetFile(new FileContract
+                    {
+                        FileStatus = Status.Deleted,
+                        FilePath = file.Substring(dir.Length)
+                    });
+                    files.Remove(file);
+                    break;
+                } else
+                {
+                    itIsDirectory = true;
+                }
+            }
+            if(itIsDirectory)
+            {
+                foreach (string file in files)
+                {
+                    if (file.Contains(directory))
+                    {
+                        wcfClient.SetFile(new FileContract
+                        {
+                            FileStatus = Status.Deleted,
+                            FilePath = file.Substring(dir.Length)
+                        });
+                    }
+                }
+                files.RemoveAll(file => file.Contains(directory));
+            }
         }
 
         private void SetFileWatcher()
@@ -174,26 +224,34 @@ namespace client
                 return false;
         }
 
+        private void DisplayFilesList()
+        {
+            Console.Clear();
+            Console.WriteLine("Lista plików");
+            this.files.ForEach(Console.WriteLine);
+        }
+
         private void OnChanged(object source, FileSystemEventArgs e)
         {
             if(e.ChangeType.ToString() == "Created")
             {
-                date = DateTime.Now;
+                lastModificationDate = DateTime.Now;
+                if(!this.isItDirectory(e.FullPath))
+                    this.SendFile(e.FullPath);
+
+                this.DisplayFilesList();
             }
             if (e.ChangeType.ToString() == "Deleted")
             {
-                date = DateTime.Now;
-                this.DeleteFile(e.FullPath);
+                lastModificationDate = DateTime.Now;
+                this.DeleteFiles(e.FullPath);
+
+                this.DisplayFilesList();
             }
-            if (e.ChangeType.ToString() == "Changed")
-            {
-            }
+            if (e.ChangeType.ToString() == "Changed") { }
         }
 
-        private void OnRenamed(object source, RenamedEventArgs e)
-        {
-            Console.WriteLine("File: {0} renamed to {1}", e.OldFullPath, e.FullPath);
-        }
+        private void OnRenamed(object source, RenamedEventArgs e) { }
 
         private String getIP()
         {
@@ -205,12 +263,9 @@ namespace client
             return myIP;
         }
 
-
         static void Main(string[] args)
         {
-
             new Client();
-
         }
 
     }

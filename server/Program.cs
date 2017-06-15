@@ -11,12 +11,34 @@ namespace server
 {
     public class Program
     {
-        static void Main(string[] args)
+        public Program()
         {
+            this.ClearFolder(@"C:\To");
             ServiceHost host = new ServiceHost(typeof(Server));
             host.Open();
 
             Console.ReadLine();
+        }
+
+        static void Main(string[] args)
+        {
+            new Program();
+        }
+
+        private void ClearFolder(string folderName)
+        {
+            DirectoryInfo dirName = new DirectoryInfo(folderName);
+
+            foreach (FileInfo fileInfo in dirName.GetFiles())
+            {
+                fileInfo.Delete();
+            }
+
+            foreach (DirectoryInfo directoryInfo in dirName.GetDirectories())
+            {
+                ClearFolder(directoryInfo.FullName);
+                directoryInfo.Delete();
+            }
         }
     }
 
@@ -24,10 +46,13 @@ namespace server
     public interface IServer
     {
         [OperationContract]
+        IList<FileContract> GetFiles(DateTime lastModification);
+
+        [OperationContract]
         void SetFile(FileContract fileContract);
 
         [OperationContract]
-        IList<FileContract> GetFiles(DateTime LastModification);
+        string SendMessage(string command, string value);
     }
 
     // Use a data contract as illustrated in the sample below to add composite types to service operations.
@@ -42,9 +67,6 @@ namespace server
 
         [DataMember]
         public Status FileStatus { get; set; }
-
-        /*[DataMember]
-        public string Directory { get; set; }*/
 
         [DataMember]
         public DateTime LastModification { get; set; }
@@ -64,9 +86,6 @@ namespace server
     [DataContract]
     public enum Status
     {
-       /* [EnumMember]
-        NewDirectory,*/
-
         [EnumMember]
         New,
 
@@ -85,13 +104,12 @@ namespace server
     {
         const string dir = @"C:\To\";
 
-
         private static List<FileContract> FilesDb { get; set; } = new List<FileContract>();
 
-        public IList<FileContract> GetFiles(DateTime LastModification)
+        public IList<FileContract> GetFiles(DateTime lastModification)
         {
             return FilesDb
-                .Where(file => file.LastModification >= LastModification)
+                .Where(file => file.LastModification >= lastModification)
                 .ToList();
         }
 
@@ -99,9 +117,6 @@ namespace server
         {
             switch (fileContract.FileStatus)
             {
-                /*case Status.NewDirectory:
-                    this.SetNewDirectory(fileContract);
-                    break;*/
                 case Status.New:
                     this.SetNewFile(fileContract);
                     break;
@@ -113,28 +128,14 @@ namespace server
             }
         }
 
-       /* private void SetNewDirectory(FileContract fileContract)
-        {
-            var path = Path.Combine(dir, fileContract.Directory);
-
-            if (!Directory.Exists(path))
-            {
-                Directory.CreateDirectory(path);
-            }
-        }*/
-
         private void SetNewFile(FileContract fileContract)
         {
             var path = Path.Combine(dir, fileContract.FilePath);
             var dirname = Path.GetDirectoryName(path);
 
-            Console.WriteLine("fC.FilePath " + fileContract.FilePath);
-            Console.WriteLine("Path " + path);
-            Console.WriteLine("Dirname " + dirname);
-
             if (!Directory.Exists(dirname))
             {
-                Directory.CreateDirectory(path);
+                Directory.CreateDirectory(dirname);
             }
 
             File.WriteAllBytes(path, fileContract.Bytes);
@@ -142,7 +143,8 @@ namespace server
             fileContract.LastModification = DateTime.Now;
             FilesDb.Add(fileContract);
 
-            FilesDb.ForEach(x => { Console.WriteLine("File name " + x.FileName); Console.WriteLine("Last mod " + x.LastModification); });
+            Console.Clear();
+            FilesDb.ForEach(x => { Console.Write("File name: " + x.FileName); Console.Write(" File status: " + x.FileStatus + "\n"); });
 
         }
 
@@ -158,6 +160,24 @@ namespace server
                 file.FileStatus = Status.Deleted;
                 file.LastModification = DateTime.Now;
             }
+
+            Console.Clear();
+            FilesDb.ForEach(x => { Console.Write("File name: " + x.FileName); Console.Write(" File status: " + x.FileStatus + "\n"); });
+
         }
+
+        public string SendMessage(string command, string value)
+        {
+            string response = "";
+            switch (command)
+            {
+                case "login":
+                    response = "Zalogowano pomyślnie !";
+                    Console.WriteLine("Użytkownik o adresie " + value + " zalogował się do serwera");
+                    break;
+            }
+            return response;
+        }
+
     }
 }
