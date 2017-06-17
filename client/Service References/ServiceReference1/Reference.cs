@@ -35,6 +35,9 @@ namespace client.ServiceReference1 {
         private System.DateTime LastModificationField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private string NewFilePathField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
         private client.ServiceReference1.User UserField;
         
         [global::System.ComponentModel.BrowsableAttribute(false)]
@@ -95,6 +98,19 @@ namespace client.ServiceReference1 {
                 if ((this.LastModificationField.Equals(value) != true)) {
                     this.LastModificationField = value;
                     this.RaisePropertyChanged("LastModification");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public string NewFilePath {
+            get {
+                return this.NewFilePathField;
+            }
+            set {
+                if ((object.ReferenceEquals(this.NewFilePathField, value) != true)) {
+                    this.NewFilePathField = value;
+                    this.RaisePropertyChanged("NewFilePath");
                 }
             }
         }
@@ -176,6 +192,9 @@ namespace client.ServiceReference1 {
         
         [System.Runtime.Serialization.EnumMemberAttribute()]
         Deleted = 1,
+        
+        [System.Runtime.Serialization.EnumMemberAttribute()]
+        Renamed = 2,
     }
     
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]

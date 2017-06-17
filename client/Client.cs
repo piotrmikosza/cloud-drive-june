@@ -199,6 +199,55 @@ namespace client
             }
         }
 
+        private void RenameFiles(string oldPath, string newPath)
+        {
+
+            bool itIsDirectory = false;
+
+            foreach (string file in files)
+            {
+                if (file.Equals(oldPath))
+                {
+                    itIsDirectory = false;
+                    wcfClient.SetFile(new FileContract
+                    {
+                        FileStatus = Status.Renamed,
+                        FilePath = oldPath.Substring(dir.Length),
+                        NewFilePath = newPath.Substring(dir.Length)
+                    });
+                    int index = files.FindIndex(f => f == oldPath);
+                    files[index] = newPath;
+                    break;
+                }
+                else
+                {
+                    itIsDirectory = true;
+                }
+            }
+            if (itIsDirectory)
+            {
+                List<int> indexes = new List<int>();
+                foreach (string file in files)
+                {
+                    if (file.Contains(oldPath))
+                    {
+                        indexes.Add(files.IndexOf(file));
+                    }
+                }
+                wcfClient.SetFile(new FileContract
+                {
+                    FileStatus = Status.Renamed,
+                    FilePath = oldPath.Substring(dir.Length),
+                    NewFilePath = newPath.Substring(dir.Length)
+                });
+                foreach (int i in indexes)
+                {
+                    var cutDir = files[i].Substring(oldPath.Length);
+                    files[i] = newPath + cutDir;
+                }
+            }
+        }
+
         private void SetFileWatcher()
         {
             var watcher = new FileSystemWatcher();
@@ -251,7 +300,11 @@ namespace client
             if (e.ChangeType.ToString() == "Changed") { }
         }
 
-        private void OnRenamed(object source, RenamedEventArgs e) { }
+        private void OnRenamed(object source, RenamedEventArgs e)
+        {
+            this.RenameFiles(e.OldFullPath, e.FullPath);
+            this.DisplayFilesList();
+        }
 
         private String getIP()
         {

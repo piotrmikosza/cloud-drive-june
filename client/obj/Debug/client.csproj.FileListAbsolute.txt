@@ -18,3 +18,8 @@ C:\Users\Piotr\Desktop\server\client\bin\Debug\client.exe
 C:\Users\Piotr\Desktop\server\client\bin\Debug\client.pdb
 C:\Users\Piotr\Desktop\server\client\obj\Debug\client.exe
 C:\Users\Piotr\Desktop\server\client\obj\Debug\client.pdb
+C:\Users\Piotr\Desktop\drive\client\bin\Debug\client.exe.config
+C:\Users\Piotr\Desktop\drive\client\bin\Debug\client.exe
+C:\Users\Piotr\Desktop\drive\client\bin\Debug\client.pdb
+C:\Users\Piotr\Desktop\drive\client\obj\Debug\client.exe
+C:\Users\Piotr\Desktop\drive\client\obj\Debug\client.pdb

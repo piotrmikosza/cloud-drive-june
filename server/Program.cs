@@ -66,6 +66,9 @@ namespace server
         public string FilePath { get; set; }
 
         [DataMember]
+        public string NewFilePath { get; set; }
+
+        [DataMember]
         public Status FileStatus { get; set; }
 
         [DataMember]
@@ -90,7 +93,10 @@ namespace server
         New,
 
         [EnumMember]
-        Deleted
+        Deleted,
+
+        [EnumMember]
+        Renamed
     }
 
     [DataContract]
@@ -113,6 +119,15 @@ namespace server
                 .ToList();
         }
 
+        private void DisplayFilesList()
+        {
+            Console.Clear();
+            FilesDb.ForEach(x => {
+                Console.Write("File path: " + x.FilePath);
+                Console.Write(" File status: " + x.FileStatus + "\n");
+            });
+        }
+
         public void SetFile(FileContract fileContract)
         {
             switch (fileContract.FileStatus)
@@ -122,6 +137,9 @@ namespace server
                     break;
                 case Status.Deleted:
                     this.SetDeletedFile(fileContract);
+                    break;
+                case Status.Renamed:
+                    this.SetRenamedFile(fileContract);
                     break;
                 default:
                     throw new Exception("Status not matching!");
@@ -143,9 +161,7 @@ namespace server
             fileContract.LastModification = DateTime.Now;
             FilesDb.Add(fileContract);
 
-            Console.Clear();
-            FilesDb.ForEach(x => { Console.Write("File name: " + x.FileName); Console.Write(" File status: " + x.FileStatus + "\n"); });
-
+            this.DisplayFilesList();
         }
 
         private void SetDeletedFile(FileContract fileContract)
@@ -161,9 +177,47 @@ namespace server
                 file.LastModification = DateTime.Now;
             }
 
-            Console.Clear();
-            FilesDb.ForEach(x => { Console.Write("File name: " + x.FileName); Console.Write(" File status: " + x.FileStatus + "\n"); });
+            this.DisplayFilesList();
+        }
 
+        private void SetRenamedFile(FileContract fileContract)
+        {
+            var oldPath = Path.Combine(dir, fileContract.FilePath);
+            var newPath = Path.Combine(dir, fileContract.NewFilePath);
+
+            if (FilesDb.Any(file => file.FilePath == fileContract.FilePath))
+            {
+                File.Move(oldPath, newPath);
+
+                var file = FilesDb.Single(f => f.FilePath == fileContract.FilePath);
+               
+                file.FileStatus = Status.Renamed;
+                file.LastModification = DateTime.Now;
+                file.FilePath = fileContract.NewFilePath;
+            } else
+            {
+                Directory.Move(oldPath, newPath);
+
+                List<int> indexes = new List<int>();
+
+                FilesDb.ForEach(x =>
+                {
+                    if (x.FilePath.Contains(fileContract.FilePath))
+                    {
+                        indexes.Add(FilesDb.IndexOf(x));
+                    }
+                });
+
+                foreach (int i in indexes)
+                {
+                    var cutDir = FilesDb[i].FilePath.Substring(fileContract.FilePath.Length);
+                    FilesDb[i].FilePath = fileContract.NewFilePath + cutDir;
+                    FilesDb[i].FileStatus = Status.Renamed;
+                    FilesDb[i].LastModification = DateTime.Now;
+                }
+            }
+
+            this.DisplayFilesList();
         }
 
         public string SendMessage(string command, string value)
