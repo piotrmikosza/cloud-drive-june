@@ -63,10 +63,10 @@ namespace server
         public byte[] Bytes { get; set; }
 
         [DataMember]
-        public string FilePath { get; set; }
+        public string OldFilePath { get; set; }
 
         [DataMember]
-        public string NewFilePath { get; set; }
+        public string FilePath { get; set; }
 
         [DataMember]
         public Status FileStatus { get; set; }
@@ -123,7 +123,8 @@ namespace server
         {
             Console.Clear();
             FilesDb.ForEach(x => {
-                Console.Write("File path: " + x.FilePath);
+                Console.Write("Actually path: " + x.FilePath);
+                Console.Write("Old path: " + x.OldFilePath);
                 Console.Write(" File status: " + x.FileStatus + "\n");
             });
         }
@@ -183,7 +184,7 @@ namespace server
         private void SetRenamedFile(FileContract fileContract)
         {
             var oldPath = Path.Combine(dir, fileContract.FilePath);
-            var newPath = Path.Combine(dir, fileContract.NewFilePath);
+            var newPath = Path.Combine(dir, fileContract.OldFilePath);
 
             if (FilesDb.Any(file => file.FilePath == fileContract.FilePath))
             {
@@ -193,7 +194,10 @@ namespace server
                
                 file.FileStatus = Status.Renamed;
                 file.LastModification = DateTime.Now;
-                file.FilePath = fileContract.NewFilePath;
+                var tmp = file.FilePath;
+                file.FilePath = fileContract.OldFilePath;
+                file.OldFilePath = tmp;
+
             } else
             {
                 Directory.Move(oldPath, newPath);
@@ -211,7 +215,9 @@ namespace server
                 foreach (int i in indexes)
                 {
                     var cutDir = FilesDb[i].FilePath.Substring(fileContract.FilePath.Length);
-                    FilesDb[i].FilePath = fileContract.NewFilePath + cutDir;
+                    var tmp = FilesDb[i].FilePath;
+                    FilesDb[i].FilePath = fileContract.OldFilePath + cutDir;
+                    FilesDb[i].OldFilePath = tmp;
                     FilesDb[i].FileStatus = Status.Renamed;
                     FilesDb[i].LastModification = DateTime.Now;
                 }

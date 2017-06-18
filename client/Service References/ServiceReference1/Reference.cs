@@ -35,7 +35,7 @@ namespace client.ServiceReference1 {
         private System.DateTime LastModificationField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
-        private string NewFilePathField;
+        private string OldFilePathField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
         private client.ServiceReference1.User UserField;
@@ -103,14 +103,14 @@ namespace client.ServiceReference1 {
         }
         
         [System.Runtime.Serialization.DataMemberAttribute()]
-        public string NewFilePath {
+        public string OldFilePath {
             get {
-                return this.NewFilePathField;
+                return this.OldFilePathField;
             }
             set {
-                if ((object.ReferenceEquals(this.NewFilePathField, value) != true)) {
-                    this.NewFilePathField = value;
-                    this.RaisePropertyChanged("NewFilePath");
+                if ((object.ReferenceEquals(this.OldFilePathField, value) != true)) {
+                    this.OldFilePathField = value;
+                    this.RaisePropertyChanged("OldFilePath");
                 }
             }
         }
