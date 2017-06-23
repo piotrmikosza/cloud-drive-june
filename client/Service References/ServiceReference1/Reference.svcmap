@@ -19,14 +19,14 @@
     <ServiceContractMappings />
   </ClientOptions>
   <MetadataSources>
-    <MetadataSource Address="http://192.168.1.7/service" Protocol="http" SourceId="1" />
+    <MetadataSource Address="http://192.168.56.1/service" Protocol="http" SourceId="1" />
   </MetadataSources>
   <Metadata>
-    <MetadataFile FileName="Server1.wsdl" MetadataType="Wsdl" ID="74ca640a-b2a6-4992-8259-f3d6280f5ba7" SourceId="1" SourceUrl="http://192.168.1.7/service?wsdl" />
-    <MetadataFile FileName="service1.disco" MetadataType="Disco" ID="862eaa6b-99ed-4c6a-819d-10674e747751" SourceId="1" SourceUrl="http://192.168.1.7/service?disco" />
-    <MetadataFile FileName="service3.xsd" MetadataType="Schema" ID="0aeac0d3-8cee-405e-a3fd-f865780144f4" SourceId="1" SourceUrl="http://192.168.1.7/service?xsd=xsd2" />
-    <MetadataFile FileName="service31.xsd" MetadataType="Schema" ID="09d47bbf-37c8-485c-b803-4a41b60c5907" SourceId="1" SourceUrl="http://192.168.1.7/service?xsd=xsd1" />
-    <MetadataFile FileName="service32.xsd" MetadataType="Schema" ID="cbf35954-dda6-4c04-870a-ae1816024940" SourceId="1" SourceUrl="http://192.168.1.7/service?xsd=xsd0" />
+    <MetadataFile FileName="service.xsd" MetadataType="Schema" ID="c62b41d9-b89b-4aa2-a2c7-e72476d60f38" SourceId="1" SourceUrl="http://192.168.56.1/service?xsd=xsd0" />
+    <MetadataFile FileName="Server.wsdl" MetadataType="Wsdl" ID="b61e41d1-e24c-4345-85f9-367b50c4e8db" SourceId="1" SourceUrl="http://192.168.56.1/service?wsdl" />
+    <MetadataFile FileName="service1.xsd" MetadataType="Schema" ID="bc6df3a1-ac79-41c6-84f2-d7b76da31b48" SourceId="1" SourceUrl="http://192.168.56.1/service?xsd=xsd1" />
+    <MetadataFile FileName="service.disco" MetadataType="Disco" ID="78948ac6-df1f-4f99-a970-23df80208b22" SourceId="1" SourceUrl="http://192.168.56.1/service?disco" />
+    <MetadataFile FileName="service2.xsd" MetadataType="Schema" ID="bf6a88a9-8f0a-400a-b9c5-d2718cb4ed59" SourceId="1" SourceUrl="http://192.168.56.1/service?xsd=xsd2" />
   </Metadata>
   <Extensions>
     <ExtensionFile FileName="configuration91.svcinfo" Name="configuration91.svcinfo" />

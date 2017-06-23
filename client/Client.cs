@@ -7,6 +7,7 @@ using System.Net;
 using System.ServiceModel;
 using System.Text;
 using System.Linq;
+using System.Threading;
 
 namespace client
 {
@@ -20,6 +21,7 @@ namespace client
         private IList<FileContract> listFileContract;
         private static DateTime lastModificationDate;
         bool isItConnected = false;
+        bool isWatched = true;
 
         public Client()
         {
@@ -35,6 +37,7 @@ namespace client
                 {
                     if (Console.ReadKey(true).Key == ConsoleKey.F2)
                     {
+                        isWatched = false;
                         foreach (FileContract fileContract in this.GetListFileContract())
                         {
                             Console.WriteLine(fileContract.FilePath + " " + fileContract.FileStatus);
@@ -60,6 +63,7 @@ namespace client
                                 this.RenameFiles(fileContract.OldFilePath, fileContract.FilePath, false);
                             }
                         }
+                        isWatched = true;
                     }
                 } while (Console.ReadKey(true).Key != ConsoleKey.F12);
             }
@@ -79,7 +83,7 @@ namespace client
                 //adres = Console.ReadLine();
                 try
                 {
-                    endPoint = new EndpointAddress("http://192.168.1.7/service");
+                    endPoint = new EndpointAddress("http://192.168.56.1/service");
                     //endPoint = new EndpointAddress(adres);
                     myChannelFactory = new ChannelFactory<IServer>(myBinding, endPoint);
                     wcfClient = myChannelFactory.CreateChannel();
@@ -152,6 +156,7 @@ namespace client
 
         private void SendFiles(List<string> files)
         {
+
             files.ForEach(file =>
             {
                 var bytes = File.ReadAllBytes(file);
@@ -166,6 +171,7 @@ namespace client
 
         private void SendFile(string file)
         {
+            Thread.Sleep(1000);
             var bytes = File.ReadAllBytes(file);
             wcfClient.SetFile(new FileContract
             {
@@ -269,7 +275,7 @@ namespace client
                     itIsDirectory = true;
                 }
             }
-            if (itIsDirectory)
+            if (itIsDirectory && Directory.EnumerateFiles(oldPath).Any())
             {
                 List<int> indexes = new List<int>();
                 foreach (string file in files)
@@ -334,28 +340,38 @@ namespace client
 
         private void OnChanged(object source, FileSystemEventArgs e)
         {
-            if(e.ChangeType.ToString() == "Created")
+            if (e.ChangeType.ToString() == "Created")
             {
-                lastModificationDate = DateTime.Now;
-                if(!this.isItDirectory(e.FullPath))
-                    this.SendFile(e.FullPath);
 
-                this.DisplayFilesList();
+                if (isWatched)
+                {
+                    lastModificationDate = DateTime.Now;
+                    if (!this.isItDirectory(e.FullPath))
+                        this.SendFile(e.FullPath);
+
+                    this.DisplayFilesList();
+                }
             }
             if (e.ChangeType.ToString() == "Deleted")
             {
-                lastModificationDate = DateTime.Now;
-                this.DeleteFiles(e.FullPath, true);
+                if (isWatched)
+                {
+                    lastModificationDate = DateTime.Now;
+                    this.DeleteFiles(e.FullPath, true);
 
-                this.DisplayFilesList();
+                    this.DisplayFilesList();
+                }
             }
             if (e.ChangeType.ToString() == "Changed") { }
         }
 
         private void OnRenamed(object source, RenamedEventArgs e)
         {
-            this.RenameFiles(e.OldFullPath, e.FullPath, true);
-            this.DisplayFilesList();
+            if (isWatched)
+            {
+                this.RenameFiles(e.OldFullPath, e.FullPath, true);
+                this.DisplayFilesList();
+            }
         }
 
         private String getIP()
