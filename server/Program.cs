@@ -115,13 +115,14 @@ namespace server
         public IList<FileContract> GetFiles(DateTime lastModification)
         {
             return FilesDb
-                .Where(file => file.LastModification >= lastModification)
+                .Where(file => file.LastModification.AddSeconds(-1) >= lastModification)
                 .ToList();
         }
 
         private void DisplayFilesList()
         {
             Console.Clear();
+            Console.WriteLine("Liczba plikow na serwerze " + FilesDb.Count());
             FilesDb.ForEach(x => {
                 Console.Write("Actually path: " + x.FilePath);
                 Console.Write("Old path: " + x.OldFilePath);
@@ -160,7 +161,15 @@ namespace server
             File.WriteAllBytes(path, fileContract.Bytes);
 
             fileContract.LastModification = DateTime.Now;
-            FilesDb.Add(fileContract);
+
+            if (FilesDb.Any(file => file.FilePath == fileContract.FilePath))
+            {
+                var file = FilesDb.Single(f => f.FilePath == fileContract.FilePath);
+                file.FileStatus = fileContract.FileStatus;
+            } else
+            {
+                FilesDb.Add(fileContract);
+            }
 
             this.DisplayFilesList();
         }

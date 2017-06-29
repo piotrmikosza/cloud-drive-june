@@ -21,7 +21,8 @@ namespace client
         private IList<FileContract> listFileContract;
         private static DateTime lastModificationDate;
         bool isItConnected = false;
-        bool isWatched = true;
+        FileSystemWatcher watcher = new FileSystemWatcher();
+
 
         public Client()
         {
@@ -37,33 +38,42 @@ namespace client
                 {
                     if (Console.ReadKey(true).Key == ConsoleKey.F2)
                     {
-                        isWatched = false;
-                        foreach (FileContract fileContract in this.GetListFileContract())
+                        watcher.EnableRaisingEvents = false;
+                        if(this.GetListFileContract().Count > 0)
                         {
-                            Console.WriteLine(fileContract.FilePath + " " + fileContract.FileStatus);
-                            var path = Path.Combine(dir, fileContract.FilePath);
-
-                            if (fileContract.FileStatus == Status.New)
+                            foreach (FileContract fileContract in this.GetListFileContract())
                             {
-                                var dirname = Path.GetDirectoryName(path);
+                                var path = Path.Combine(dir, fileContract.FilePath);
 
-                                if (!Directory.Exists(dirname))
+                                if (fileContract.FileStatus == Status.New)
                                 {
-                                    Directory.CreateDirectory(dirname);
+                                    var dirname = Path.GetDirectoryName(path);
+
+                                    if (!Directory.Exists(dirname))
+                                    {
+                                        Directory.CreateDirectory(dirname);
+                                    }
+                                    File.WriteAllBytes(path, fileContract.Bytes);
+                                    files.Add(path);
+
+                                    this.DisplayFilesList();
                                 }
-                                File.WriteAllBytes(path, fileContract.Bytes);
-                                files.Add(path);
-                            }
-                            else if (fileContract.FileStatus == Status.Deleted)
-                            {
-                                this.DeleteFiles(path, false);
-                            }
-                            else if (fileContract.FileStatus == Status.Renamed)
-                            {
-                                this.RenameFiles(fileContract.OldFilePath, fileContract.FilePath, false);
+                                else if (fileContract.FileStatus == Status.Deleted)
+                                {
+                                    this.DeleteFiles(path, false);
+
+                                    this.DisplayFilesList();
+                                }
+                                else if (fileContract.FileStatus == Status.Renamed)
+                                {
+                                    this.RenameFiles(fileContract.OldFilePath, fileContract.FilePath, false);
+
+                                    this.DisplayFilesList();
+                                }
                             }
                         }
-                        isWatched = true;
+
+                        watcher.EnableRaisingEvents = true;
                     }
                 } while (Console.ReadKey(true).Key != ConsoleKey.F12);
             }
@@ -83,7 +93,7 @@ namespace client
                 //adres = Console.ReadLine();
                 try
                 {
-                    endPoint = new EndpointAddress("http://192.168.56.1/service");
+                    endPoint = new EndpointAddress("http://192.168.1.102/service");
                     //endPoint = new EndpointAddress(adres);
                     myChannelFactory = new ChannelFactory<IServer>(myBinding, endPoint);
                     wcfClient = myChannelFactory.CreateChannel();
@@ -111,6 +121,7 @@ namespace client
         private IList<FileContract> GetListFileContract()
         {
             listFileContract = wcfClient.GetFiles(this.GetLastModificationDate(this.files));
+            Console.WriteLine("Count listFileContract" + listFileContract.Count());
             return listFileContract;
         }
 
@@ -124,7 +135,7 @@ namespace client
                     dates.Add(File.GetLastWriteTime(file));
                 }
                 lastModificationDate = dates.Max();
-
+                               
                 return lastModificationDate;
             } else
             {
@@ -177,7 +188,7 @@ namespace client
             {
                 FileStatus = Status.New,
                 Bytes = bytes,
-                FilePath = file.Substring(dir.Length)
+                FilePath = file.Substring(dir.Length),
             });
             files.Add(file);
         }
@@ -234,7 +245,8 @@ namespace client
                             });
                         } else
                         {
-                            File.Delete(directory);
+                            Directory.Delete(directory, true);
+                            break;
                         }
                     }
                 }
@@ -308,7 +320,6 @@ namespace client
 
         private void SetFileWatcher()
         {
-            var watcher = new FileSystemWatcher();
             watcher.Path = dir;
             watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.DirectoryName;
             watcher.Filter = "*.*";
@@ -342,36 +353,26 @@ namespace client
         {
             if (e.ChangeType.ToString() == "Created")
             {
+                lastModificationDate = DateTime.Now;
+                if (!this.isItDirectory(e.FullPath))
+                    this.SendFile(e.FullPath);
 
-                if (isWatched)
-                {
-                    lastModificationDate = DateTime.Now;
-                    if (!this.isItDirectory(e.FullPath))
-                        this.SendFile(e.FullPath);
-
-                    this.DisplayFilesList();
-                }
+                this.DisplayFilesList();
             }
             if (e.ChangeType.ToString() == "Deleted")
             {
-                if (isWatched)
-                {
-                    lastModificationDate = DateTime.Now;
-                    this.DeleteFiles(e.FullPath, true);
+                lastModificationDate = DateTime.Now;
+                this.DeleteFiles(e.FullPath, true);
 
-                    this.DisplayFilesList();
-                }
+                this.DisplayFilesList();
             }
             if (e.ChangeType.ToString() == "Changed") { }
         }
 
         private void OnRenamed(object source, RenamedEventArgs e)
         {
-            if (isWatched)
-            {
-                this.RenameFiles(e.OldFullPath, e.FullPath, true);
-                this.DisplayFilesList();
-            }
+            this.RenameFiles(e.OldFullPath, e.FullPath, true);
+            this.DisplayFilesList();
         }
 
         private String getIP()
