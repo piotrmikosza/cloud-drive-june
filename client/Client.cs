@@ -44,16 +44,16 @@ namespace client
                             foreach (FileContract fileContract in this.GetListFileContract())
                             {
                                 var path = Path.Combine(dir, fileContract.FilePath);
+                                var dirname = Path.GetDirectoryName(path);
 
                                 if (fileContract.FileStatus == Status.New)
                                 {
-                                    var dirname = Path.GetDirectoryName(path);
-
                                     if (!Directory.Exists(dirname))
                                     {
                                         Directory.CreateDirectory(dirname);
                                     }
                                     File.WriteAllBytes(path, fileContract.Bytes);
+
                                     files.Add(path);
 
                                     this.DisplayFilesList();
@@ -66,7 +66,20 @@ namespace client
                                 }
                                 else if (fileContract.FileStatus == Status.Renamed)
                                 {
-                                    this.RenameFiles(fileContract.OldFilePath, fileContract.FilePath, false);
+                                    if(!files.Any(file => file == fileContract.FilePath))
+                                    {
+                                        Console.WriteLine("Weszło w Status.Renamed");
+                                        Thread.Sleep(2000);
+                                        if (!Directory.Exists(dirname))
+                                        {
+                                            Directory.CreateDirectory(dirname);
+                                        }
+                                        File.WriteAllBytes(path, fileContract.Bytes);
+                                        files.Add(path);
+                                    } else
+                                    {
+                                        this.RenameFiles(fileContract.OldFilePath, fileContract.FilePath, false);
+                                    }
 
                                     this.DisplayFilesList();
                                 }
@@ -77,7 +90,6 @@ namespace client
                     }
                 } while (Console.ReadKey(true).Key != ConsoleKey.F12);
             }
-
         }
 
         private IServer ConnectToService()
@@ -93,7 +105,7 @@ namespace client
                 //adres = Console.ReadLine();
                 try
                 {
-                    endPoint = new EndpointAddress("http://192.168.1.102/service");
+                    endPoint = new EndpointAddress("http://192.168.1.3/service");
                     //endPoint = new EndpointAddress(adres);
                     myChannelFactory = new ChannelFactory<IServer>(myBinding, endPoint);
                     wcfClient = myChannelFactory.CreateChannel();
@@ -121,7 +133,9 @@ namespace client
         private IList<FileContract> GetListFileContract()
         {
             listFileContract = wcfClient.GetFiles(this.GetLastModificationDate(this.files));
-            Console.WriteLine("Count listFileContract" + listFileContract.Count());
+            Console.WriteLine("Count listFileContract " + listFileContract.Count());
+            Console.WriteLine("Last modification date: " + this.GetLastModificationDate(this.files));
+            Thread.Sleep(2000);
             return listFileContract;
         }
 
@@ -287,7 +301,7 @@ namespace client
                     itIsDirectory = true;
                 }
             }
-            if (itIsDirectory && Directory.EnumerateFiles(oldPath).Any())
+            if (itIsDirectory /*&& Directory.EnumerateFiles(oldPath).Any()*/)
             {
                 List<int> indexes = new List<int>();
                 foreach (string file in files)
@@ -347,6 +361,7 @@ namespace client
             Console.Clear();
             Console.WriteLine("Lista plików");
             this.files.ForEach(Console.WriteLine);
+            Console.WriteLine(lastModificationDate.Millisecond);
         }
 
         private void OnChanged(object source, FileSystemEventArgs e)

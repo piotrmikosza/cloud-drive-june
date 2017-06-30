@@ -6,6 +6,7 @@ using System.Timers;
 using System.Collections.Generic;
 using System.Text;
 using System.Linq;
+using System.Threading;
 
 namespace server
 {
@@ -114,8 +115,13 @@ namespace server
 
         public IList<FileContract> GetFiles(DateTime lastModification)
         {
+            FilesDb.ForEach(x =>
+            {
+                Console.WriteLine("fileContract date: " + x.LastModification.AddSeconds(-1));
+                Console.WriteLine("lastModification date: " + lastModification);
+            });
             return FilesDb
-                .Where(file => file.LastModification.AddSeconds(-1) >= lastModification)
+                .Where(file => file.LastModification.AddSeconds(-1) > lastModification)
                 .ToList();
         }
 
@@ -124,8 +130,9 @@ namespace server
             Console.Clear();
             Console.WriteLine("Liczba plikow na serwerze " + FilesDb.Count());
             FilesDb.ForEach(x => {
+                Console.Write("DateTime " + x.LastModification.Millisecond);
                 Console.Write("Actually path: " + x.FilePath);
-                Console.Write("Old path: " + x.OldFilePath);
+                Console.Write(" Old path: " + x.OldFilePath);
                 Console.Write(" File status: " + x.FileStatus + "\n");
             });
         }

@@ -19,14 +19,14 @@
     <ServiceContractMappings />
   </ClientOptions>
   <MetadataSources>
-    <MetadataSource Address="http://192.168.1.102/service" Protocol="http" SourceId="1" />
+    <MetadataSource Address="http://192.168.1.3/service" Protocol="http" SourceId="1" />
   </MetadataSources>
   <Metadata>
-    <MetadataFile FileName="Server.wsdl" MetadataType="Wsdl" ID="e8b32089-5a20-4103-a056-85da42e80aa8" SourceId="1" SourceUrl="http://192.168.1.102/service?wsdl" />
-    <MetadataFile FileName="service.xsd" MetadataType="Schema" ID="9d243f61-da40-467b-a1ad-c0127965d523" SourceId="1" SourceUrl="http://192.168.1.102/service?xsd=xsd1" />
-    <MetadataFile FileName="service1.xsd" MetadataType="Schema" ID="b8799986-4150-4c52-9ce5-2f6645e4a1b4" SourceId="1" SourceUrl="http://192.168.1.102/service?xsd=xsd0" />
-    <MetadataFile FileName="service.disco" MetadataType="Disco" ID="ff4c4aa0-a03e-4792-8e97-0bf64993f4bb" SourceId="1" SourceUrl="http://192.168.1.102/service?disco" />
-    <MetadataFile FileName="service2.xsd" MetadataType="Schema" ID="2198870e-c96b-4608-9be5-dfcbda3f26b9" SourceId="1" SourceUrl="http://192.168.1.102/service?xsd=xsd2" />
+    <MetadataFile FileName="service.xsd" MetadataType="Schema" ID="77ba0409-4f53-444f-92f1-1e30c5ed0b56" SourceId="1" SourceUrl="http://192.168.1.3/service?xsd=xsd2" />
+    <MetadataFile FileName="service.disco" MetadataType="Disco" ID="c097838d-cb5b-4dc9-9d4d-de4394823e09" SourceId="1" SourceUrl="http://192.168.1.3/service?disco" />
+    <MetadataFile FileName="Server.wsdl" MetadataType="Wsdl" ID="c748e640-232b-45cb-8664-a4a69e031f97" SourceId="1" SourceUrl="http://192.168.1.3/service?wsdl" />
+    <MetadataFile FileName="service1.xsd" MetadataType="Schema" ID="ff636965-7d0c-47bc-9681-c7f3d0da1417" SourceId="1" SourceUrl="http://192.168.1.3/service?xsd=xsd0" />
+    <MetadataFile FileName="service2.xsd" MetadataType="Schema" ID="08530848-fe02-4e0f-957d-3430f7f0d7ce" SourceId="1" SourceUrl="http://192.168.1.3/service?xsd=xsd1" />
   </Metadata>
   <Extensions>
     <ExtensionFile FileName="configuration91.svcinfo" Name="configuration91.svcinfo" />
