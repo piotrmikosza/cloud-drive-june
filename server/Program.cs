@@ -74,17 +74,6 @@ namespace server
 
         [DataMember]
         public DateTime LastModification { get; set; }
-
-        [DataMember]
-        public User User { get; set; }
-
-        public string FileName
-        {
-            get
-            {
-                return Path.GetFileName(this.FilePath);
-            }
-        }
     }
 
     [DataContract]
@@ -100,13 +89,6 @@ namespace server
         Renamed
     }
 
-    [DataContract]
-    public class User
-    {
-        [DataMember]
-        public string Ip { get; set; }
-    }
-
     public class Server : IServer
     {
         const string dir = @"C:\To\";
@@ -115,25 +97,22 @@ namespace server
 
         public IList<FileContract> GetFiles(DateTime lastModification)
         {
-            FilesDb.ForEach(x =>
-            {
-                Console.WriteLine("fileContract date: " + x.LastModification.AddSeconds(-1));
-                Console.WriteLine("lastModification date: " + lastModification);
-            });
             return FilesDb
-                .Where(file => file.LastModification.AddSeconds(-1) > lastModification)
+                .Where(file => file.LastModification > lastModification)
                 .ToList();
         }
 
         private void DisplayFilesList()
         {
             Console.Clear();
-            Console.WriteLine("Liczba plikow na serwerze " + FilesDb.Count());
+            Console.WriteLine("Liczba zapamiętanych plikow na serwerze: " + FilesDb.Count());
             FilesDb.ForEach(x => {
-                Console.Write("DateTime " + x.LastModification.Millisecond);
-                Console.Write("Actually path: " + x.FilePath);
-                Console.Write(" Old path: " + x.OldFilePath);
-                Console.Write(" File status: " + x.FileStatus + "\n");
+                Console.WriteLine("Path: " + x.FilePath);
+                Console.WriteLine("Old Path: " + x.OldFilePath);
+                Console.WriteLine("Status: " + x.FileStatus);
+                Console.WriteLine("Last modification: " + x.LastModification + ":" + x.LastModification.Millisecond);
+                Console.WriteLine(DateTime.Now);
+                Console.WriteLine("_________________________________________________________");
             });
         }
 
@@ -167,7 +146,7 @@ namespace server
 
             File.WriteAllBytes(path, fileContract.Bytes);
 
-            fileContract.LastModification = DateTime.Now;
+            fileContract.LastModification = DateTime.Now.AddTicks(-DateTime.Now.Ticks % TimeSpan.TicksPerSecond);
 
             if (FilesDb.Any(file => file.FilePath == fileContract.FilePath))
             {
@@ -192,6 +171,7 @@ namespace server
 
                 file.FileStatus = Status.Deleted;
                 file.LastModification = DateTime.Now;
+                fileContract.LastModification = fileContract.LastModification.AddTicks(-fileContract.LastModification.Ticks % TimeSpan.TicksPerSecond);
             }
 
             this.DisplayFilesList();
@@ -210,6 +190,7 @@ namespace server
                
                 file.FileStatus = Status.Renamed;
                 file.LastModification = DateTime.Now;
+                fileContract.LastModification = fileContract.LastModification.AddTicks(-fileContract.LastModification.Ticks % TimeSpan.TicksPerSecond);
                 var tmp = file.FilePath;
                 file.FilePath = fileContract.OldFilePath;
                 file.OldFilePath = tmp;
@@ -236,6 +217,7 @@ namespace server
                     FilesDb[i].OldFilePath = tmp;
                     FilesDb[i].FileStatus = Status.Renamed;
                     FilesDb[i].LastModification = DateTime.Now;
+                    FilesDb[i].LastModification = FilesDb[i].LastModification.AddTicks(-FilesDb[i].LastModification.Ticks % TimeSpan.TicksPerSecond);
                 }
             }
 

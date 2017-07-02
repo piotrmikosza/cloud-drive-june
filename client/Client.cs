@@ -31,7 +31,6 @@ namespace client
        
             if(isItConnected)
             {
-                //this.GetAllFiles(dir);
                 this.SetFileWatcher();
 
                 do
@@ -53,37 +52,37 @@ namespace client
                                         Directory.CreateDirectory(dirname);
                                     }
                                     File.WriteAllBytes(path, fileContract.Bytes);
-
                                     files.Add(path);
-
-                                    this.DisplayFilesList();
                                 }
                                 else if (fileContract.FileStatus == Status.Deleted)
                                 {
                                     this.DeleteFiles(path, false);
-
-                                    this.DisplayFilesList();
                                 }
                                 else if (fileContract.FileStatus == Status.Renamed)
                                 {
-                                    if(!files.Any(file => file == fileContract.FilePath))
-                                    {
-                                        Console.WriteLine("Weszło w Status.Renamed");
-                                        Thread.Sleep(2000);
-                                        if (!Directory.Exists(dirname))
-                                        {
-                                            Directory.CreateDirectory(dirname);
-                                        }
-                                        File.WriteAllBytes(path, fileContract.Bytes);
-                                        files.Add(path);
-                                    } else
-                                    {
-                                        this.RenameFiles(fileContract.OldFilePath, fileContract.FilePath, false);
-                                    }
+                                    var oldPath = Path.Combine(dir, fileContract.OldFilePath);
+                                    var oldDirName = Path.GetDirectoryName(oldPath);
 
-                                    this.DisplayFilesList();
+                                    var oldFileName = Path.GetFileName(oldPath);
+                                    var fileName = Path.GetFileName(path);
+
+                                    if (files.Any(file => file == oldPath) && oldFileName != fileName)
+                                    {
+                                        var newPath = Path.Combine(dir, fileContract.FilePath);
+
+                                        this.RenameFiles(oldPath, newPath, false);
+                                    }
+                                    else
+                                    {
+                                        if (Directory.Exists(oldDirName))
+                                        {
+                                            this.RenameFiles(oldDirName, dirname, false);
+                                            break;
+                                        }
+                                    }
                                 }
                             }
+                            this.DisplayFilesList();
                         }
 
                         watcher.EnableRaisingEvents = true;
@@ -95,18 +94,18 @@ namespace client
         private IServer ConnectToService()
         {
             bool invalid = true;
-            //string adres;
+            string adres;
 
             BasicHttpBinding myBinding = new BasicHttpBinding();
 
             do
             {
-                //Console.WriteLine("Podaj adres serwera \n");
-                //adres = Console.ReadLine();
+                Console.WriteLine("Podaj adres serwera \n");
+                adres = Console.ReadLine();
                 try
                 {
-                    endPoint = new EndpointAddress("http://192.168.1.3/service");
-                    //endPoint = new EndpointAddress(adres);
+                    //endPoint = new EndpointAddress("http://192.168.1.101/service");
+                    endPoint = new EndpointAddress(adres);
                     myChannelFactory = new ChannelFactory<IServer>(myBinding, endPoint);
                     wcfClient = myChannelFactory.CreateChannel();
                     Console.WriteLine(wcfClient.SendMessage("login", this.getIP()));
@@ -133,9 +132,6 @@ namespace client
         private IList<FileContract> GetListFileContract()
         {
             listFileContract = wcfClient.GetFiles(this.GetLastModificationDate(this.files));
-            Console.WriteLine("Count listFileContract " + listFileContract.Count());
-            Console.WriteLine("Last modification date: " + this.GetLastModificationDate(this.files));
-            Thread.Sleep(2000);
             return listFileContract;
         }
 
@@ -149,11 +145,11 @@ namespace client
                     dates.Add(File.GetLastWriteTime(file));
                 }
                 lastModificationDate = dates.Max();
-                               
+
                 return lastModificationDate;
             } else
             {
-                return new DateTime(2008, 3, 1, 7, 0, 0);
+                return new DateTime();
             }
         }
 
@@ -196,24 +192,30 @@ namespace client
 
         private void SendFile(string file)
         {
-            Thread.Sleep(1000);
-            var bytes = File.ReadAllBytes(file);
-            wcfClient.SetFile(new FileContract
+            try
             {
-                FileStatus = Status.New,
-                Bytes = bytes,
-                FilePath = file.Substring(dir.Length),
-            });
-            files.Add(file);
-        }
+                var bytes = File.ReadAllBytes(file);
 
-        private void DeleteFile(string file)
-        {
-            wcfClient.SetFile(new FileContract
+                wcfClient.SetFile(new FileContract
+                {
+                    FileStatus = Status.New,
+                    Bytes = bytes,
+                    FilePath = file.Substring(dir.Length)
+                });
+                files.Add(file);
+                File.SetLastWriteTime(file, DateTime.Now);
+
+            }
+            catch (FileNotFoundException ce)
             {
-                FileStatus = Status.Deleted,
-                FilePath = file.Substring(dir.Length)
-            });
+                Console.WriteLine(ce);
+
+            }
+            catch (IOException)
+            {
+                Console.WriteLine("Another user is already using this file.");
+                this.SendFile(file);
+            }
         }
 
         private void DeleteFiles(string directory, bool toSend)
@@ -294,6 +296,7 @@ namespace client
 
                     int index = files.FindIndex(f => f == oldPath);
                     files[index] = newPath;
+                    File.SetLastWriteTime(newPath, DateTime.Now);
                     break;
                 }
                 else
@@ -301,7 +304,9 @@ namespace client
                     itIsDirectory = true;
                 }
             }
-            if (itIsDirectory /*&& Directory.EnumerateFiles(oldPath).Any()*/)
+
+
+            if (itIsDirectory)
             {
                 List<int> indexes = new List<int>();
                 foreach (string file in files)
@@ -323,11 +328,11 @@ namespace client
                 {
                     Directory.Move(oldPath, newPath);
                 }
-
                 foreach (int i in indexes)
                 {
                     var cutDir = files[i].Substring(oldPath.Length);
                     files[i] = newPath + cutDir;
+                    File.SetLastWriteTime(files[i], DateTime.Now);
                 }
             }
         }
@@ -359,9 +364,13 @@ namespace client
         private void DisplayFilesList()
         {
             Console.Clear();
-            Console.WriteLine("Lista plików");
-            this.files.ForEach(Console.WriteLine);
-            Console.WriteLine(lastModificationDate.Millisecond);
+            Console.WriteLine("Wciśnij F2 by zsynchronizować pliki z serwera");
+            Console.WriteLine("Lista plików lokalnie: " + files.Count());
+            this.files.ForEach(x =>
+            {
+                Console.WriteLine(x + " " + File.GetLastWriteTime(x) + ":" + File.GetLastWriteTime(x).Millisecond);
+            });
+
         }
 
         private void OnChanged(object source, FileSystemEventArgs e)
@@ -381,7 +390,8 @@ namespace client
 
                 this.DisplayFilesList();
             }
-            if (e.ChangeType.ToString() == "Changed") { }
+            if (e.ChangeType.ToString() == "Changed") {
+            }
         }
 
         private void OnRenamed(object source, RenamedEventArgs e)
@@ -396,7 +406,6 @@ namespace client
 
             // Get the IP
             string myIP = Dns.GetHostByName(hostName).AddressList[0].ToString();
-
             return myIP;
         }
 
