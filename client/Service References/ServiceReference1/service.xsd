@@ -21,6 +21,7 @@
       <xs:enumeration value="New" />
       <xs:enumeration value="Deleted" />
       <xs:enumeration value="Renamed" />
+      <xs:enumeration value="Modified" />
     </xs:restriction>
   </xs:simpleType>
   <xs:element name="Status" nillable="true" type="tns:Status" />

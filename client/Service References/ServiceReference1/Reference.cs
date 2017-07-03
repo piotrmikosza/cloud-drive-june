@@ -134,6 +134,9 @@ namespace client.ServiceReference1 {
         
         [System.Runtime.Serialization.EnumMemberAttribute()]
         Renamed = 2,
+        
+        [System.Runtime.Serialization.EnumMemberAttribute()]
+        Modified = 3,
     }
     
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]

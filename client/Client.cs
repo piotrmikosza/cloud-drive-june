@@ -22,7 +22,8 @@ namespace client
         private static DateTime lastModificationDate;
         bool isItConnected = false;
         FileSystemWatcher watcher = new FileSystemWatcher();
-
+        int count = 0;
+        DateTime tmpDate;
 
         public Client()
         {
@@ -54,9 +55,24 @@ namespace client
                                     File.WriteAllBytes(path, fileContract.Bytes);
                                     files.Add(path);
                                 }
+                                else if (fileContract.FileStatus == Status.Modified)
+                                {
+                                    Console.WriteLine("1");
+                                    if(!Directory.Exists(dirname))
+                                    {
+                                        Console.WriteLine("2");
+                                        Directory.CreateDirectory(dirname);
+                                    }
+                                    if (!files.Any(file => file == path))
+                                    {
+                                        files.Add(path);
+                                    }
+                                    File.WriteAllBytes(path, fileContract.Bytes);
+                                }
                                 else if (fileContract.FileStatus == Status.Deleted)
                                 {
                                     this.DeleteFiles(path, false);
+                                    this.DeleteDirectory();
                                 }
                                 else if (fileContract.FileStatus == Status.Renamed)
                                 {
@@ -78,6 +94,10 @@ namespace client
                                         {
                                             this.RenameFiles(oldDirName, dirname, false);
                                             break;
+                                        } else
+                                        {
+                                            Directory.CreateDirectory(dirname);
+                                            File.WriteAllBytes(path, fileContract.Bytes);
                                         }
                                     }
                                 }
@@ -94,18 +114,18 @@ namespace client
         private IServer ConnectToService()
         {
             bool invalid = true;
-            string adres;
+            //string adres;
 
             BasicHttpBinding myBinding = new BasicHttpBinding();
 
             do
             {
-                Console.WriteLine("Podaj adres serwera \n");
-                adres = Console.ReadLine();
+                //Console.WriteLine("Podaj adres serwera \n");
+                //adres = Console.ReadLine();
                 try
                 {
-                    //endPoint = new EndpointAddress("http://192.168.1.101/service");
-                    endPoint = new EndpointAddress(adres);
+                    endPoint = new EndpointAddress("http://192.168.1.3/service");
+                    //endPoint = new EndpointAddress(adres);
                     myChannelFactory = new ChannelFactory<IServer>(myBinding, endPoint);
                     wcfClient = myChannelFactory.CreateChannel();
                     Console.WriteLine(wcfClient.SendMessage("login", this.getIP()));
@@ -131,7 +151,15 @@ namespace client
 
         private IList<FileContract> GetListFileContract()
         {
-            listFileContract = wcfClient.GetFiles(this.GetLastModificationDate(this.files));
+            try
+            {
+                listFileContract = new List<FileContract>();
+                listFileContract = wcfClient.GetFiles(this.GetLastModificationDate(this.files));
+            }
+            catch (EndpointNotFoundException ce)
+            {
+                Console.WriteLine(ce.Message + "\n");
+            }
             return listFileContract;
         }
 
@@ -194,6 +222,7 @@ namespace client
         {
             try
             {
+
                 var bytes = File.ReadAllBytes(file);
 
                 wcfClient.SetFile(new FileContract
@@ -205,6 +234,7 @@ namespace client
                 files.Add(file);
                 File.SetLastWriteTime(file, DateTime.Now);
 
+
             }
             catch (FileNotFoundException ce)
             {
@@ -215,6 +245,43 @@ namespace client
             {
                 Console.WriteLine("Another user is already using this file.");
                 this.SendFile(file);
+            }
+        }
+
+        private void SendEditFile(string file)
+        {
+            try
+            {
+                var bytes = File.ReadAllBytes(file);
+
+                wcfClient.SetFile(new FileContract
+                {
+                    FileStatus = Status.Modified,
+                    Bytes = bytes,
+                    FilePath = file.Substring(dir.Length)
+                });
+                File.SetLastWriteTime(file, DateTime.Now);
+            }
+            catch (IOException)
+            {
+                Console.WriteLine("Another user is already using this file.");
+                this.SendEditFile(file);
+            }
+        }
+
+        private void DeleteDirectory()
+        {
+            if (Directory.Exists(dir))
+            {
+                //Delete all child Directories if they are empty
+
+                foreach (string subdirectory in Directory.GetDirectories(dir))
+                {
+                    string[] file = Directory.GetFiles(subdirectory, "*.*");
+
+                    if (file.Length == 0)
+                        Directory.Delete(subdirectory);
+                }
             }
         }
 
@@ -248,6 +315,8 @@ namespace client
             }
             if(itIsDirectory)
             {
+                Console.WriteLine("WESZŁO");
+                Console.ReadLine();
                 foreach (string file in files)
                 {
                     if (file.Contains(directory))
@@ -341,6 +410,7 @@ namespace client
         {
             watcher.Path = dir;
             watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.DirectoryName;
+
             watcher.Filter = "*.*";
             watcher.Changed += new FileSystemEventHandler(OnChanged);
             watcher.Created += new FileSystemEventHandler(OnChanged);
@@ -373,30 +443,65 @@ namespace client
 
         }
 
+        private bool IsFileLocked(FileInfo file)
+        {
+            FileStream stream = null;
+            try
+            {
+                stream = file.Open(FileMode.Open, FileAccess.Read, FileShare.None);
+            }
+            catch (IOException)
+            {
+                //the file is unavailable because it is:
+                //still being written to
+                //or being processed by another thread
+                //or does not exist (has already been processed)
+                return true;
+            }
+            finally
+            {
+                if (stream != null)
+                    stream.Close();
+            }
+
+            //file is not locked
+            return false;
+        }
+
         private void OnChanged(object source, FileSystemEventArgs e)
         {
             if (e.ChangeType.ToString() == "Created")
             {
+                tmpDate = File.GetLastWriteTime(e.FullPath);
+                Console.WriteLine(tmpDate);
                 lastModificationDate = DateTime.Now;
                 if (!this.isItDirectory(e.FullPath))
+                {
                     this.SendFile(e.FullPath);
-
+                }
+                    
+               
                 this.DisplayFilesList();
             }
             if (e.ChangeType.ToString() == "Deleted")
             {
+
                 lastModificationDate = DateTime.Now;
                 this.DeleteFiles(e.FullPath, true);
 
                 this.DisplayFilesList();
             }
-            if (e.ChangeType.ToString() == "Changed") {
+            if (e.ChangeType.ToString() == "Changed")
+            {
+               
             }
+            
         }
 
         private void OnRenamed(object source, RenamedEventArgs e)
         {
             this.RenameFiles(e.OldFullPath, e.FullPath, true);
+
             this.DisplayFilesList();
         }
 

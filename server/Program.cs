@@ -86,7 +86,10 @@ namespace server
         Deleted,
 
         [EnumMember]
-        Renamed
+        Renamed,
+
+        [EnumMember]
+        Modified
     }
 
     public class Server : IServer
@@ -111,7 +114,6 @@ namespace server
                 Console.WriteLine("Old Path: " + x.OldFilePath);
                 Console.WriteLine("Status: " + x.FileStatus);
                 Console.WriteLine("Last modification: " + x.LastModification + ":" + x.LastModification.Millisecond);
-                Console.WriteLine(DateTime.Now);
                 Console.WriteLine("_________________________________________________________");
             });
         }
@@ -128,6 +130,9 @@ namespace server
                     break;
                 case Status.Renamed:
                     this.SetRenamedFile(fileContract);
+                    break;
+                case Status.Modified:
+                    this.SetModifiedFile(fileContract);
                     break;
                 default:
                     throw new Exception("Status not matching!");
@@ -146,7 +151,8 @@ namespace server
 
             File.WriteAllBytes(path, fileContract.Bytes);
 
-            fileContract.LastModification = DateTime.Now.AddTicks(-DateTime.Now.Ticks % TimeSpan.TicksPerSecond);
+            fileContract.LastModification = DateTime.Now;
+            fileContract.LastModification = fileContract.LastModification.AddTicks(-fileContract.LastModification.Ticks % TimeSpan.TicksPerSecond);
 
             if (FilesDb.Any(file => file.FilePath == fileContract.FilePath))
             {
@@ -160,10 +166,27 @@ namespace server
             this.DisplayFilesList();
         }
 
+        private void DeleteDirectory()
+        {
+            if (Directory.Exists(dir))
+            {
+                //Delete all child Directories if they are empty
+
+                foreach (string subdirectory in Directory.GetDirectories(dir))
+                {
+                    string[] file = Directory.GetFiles(subdirectory, "*.*");
+
+                    if (file.Length == 0)
+                        Directory.Delete(subdirectory);
+                }
+            }
+        }
+
         private void SetDeletedFile(FileContract fileContract)
         {
             var path = Path.Combine(dir, fileContract.FilePath);
             File.Delete(path);
+            DeleteDirectory();
 
             if (FilesDb.Any(file => file.FilePath == fileContract.FilePath))
             {
@@ -224,13 +247,33 @@ namespace server
             this.DisplayFilesList();
         }
 
+        private void SetModifiedFile(FileContract fileContract)
+        {
+            var path = Path.Combine(dir, fileContract.FilePath);
+
+            File.WriteAllBytes(path, fileContract.Bytes);
+
+            fileContract.LastModification = DateTime.Now;
+            fileContract.LastModification = fileContract.LastModification.AddTicks(-fileContract.LastModification.Ticks % TimeSpan.TicksPerSecond);
+
+            if (FilesDb.Any(file => file.FilePath == fileContract.FilePath))
+            {
+                var file = FilesDb.Single(f => f.FilePath == fileContract.FilePath);
+                file.FileStatus = fileContract.FileStatus;
+                file.LastModification = fileContract.LastModification;
+                file.Bytes = fileContract.Bytes;
+            }
+
+            this.DisplayFilesList();
+        }
+
         public string SendMessage(string command, string value)
         {
             string response = "";
             switch (command)
             {
                 case "login":
-                    response = "Zalogowano pomyślnie !";
+                    response = "Zalogowano pomyślnie ! Wciśnij F2 by synchronizować pliki";
                     Console.WriteLine("Użytkownik o adresie " + value + " zalogował się do serwera");
                     break;
             }
