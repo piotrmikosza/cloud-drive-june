@@ -276,6 +276,9 @@ namespace server
                     response = "Zalogowano pomyślnie ! Wciśnij F2 by synchronizować pliki";
                     Console.WriteLine("Użytkownik o adresie " + value + " zalogował się do serwera");
                     break;
+
+                case "check":
+                    break;
             }
             return response;
         }

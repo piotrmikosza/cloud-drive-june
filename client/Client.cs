@@ -8,6 +8,8 @@ using System.ServiceModel;
 using System.Text;
 using System.Linq;
 using System.Threading;
+using System.Collections.Concurrent;
+using System.ComponentModel;
 
 namespace client
 {
@@ -21,99 +23,117 @@ namespace client
         private IList<FileContract> listFileContract;
         private static DateTime lastModificationDate;
         bool isItConnected = false;
+        bool invalid = true;
+        private string fileName = null;
         FileSystemWatcher watcher = new FileSystemWatcher();
         int count = 0;
         DateTime tmpDate;
+        BlockingCollection<string> q;
 
         public Client()
         {
             
             this.ConnectToService();
-       
-            if(isItConnected)
+            this.SetFileWatcher();
+
+
+            
+            do
             {
-                this.SetFileWatcher();
-
-                do
+                if (Console.ReadKey(true).Key == ConsoleKey.F2)
                 {
-                    if (Console.ReadKey(true).Key == ConsoleKey.F2)
+                    try
                     {
-                        watcher.EnableRaisingEvents = false;
-                        if(this.GetListFileContract().Count > 0)
-                        {
-                            foreach (FileContract fileContract in this.GetListFileContract())
-                            {
-                                var path = Path.Combine(dir, fileContract.FilePath);
-                                var dirname = Path.GetDirectoryName(path);
+                        wcfClient.SendMessage("check", "");
+                    }
+                    catch (EndpointNotFoundException)
+                    {
+                        Console.WriteLine("Serwer jest wyłączony. Sprawdź połączenie serwera!");
+                        invalid = true;
+                        isItConnected = false;
+                        this.ConnectToService();
+                    }
 
-                                if (fileContract.FileStatus == Status.New)
+
+                    if (isItConnected)
+                    {
+
+                    watcher.EnableRaisingEvents = false;
+                    if (this.GetListFileContract().Count > 0)
+                    {
+                        foreach (FileContract fileContract in this.GetListFileContract())
+                        {
+                            var path = Path.Combine(dir, fileContract.FilePath);
+                            var dirname = Path.GetDirectoryName(path);
+
+                            if (fileContract.FileStatus == Status.New)
+                            {
+                                if (!Directory.Exists(dirname))
                                 {
-                                    if (!Directory.Exists(dirname))
-                                    {
-                                        Directory.CreateDirectory(dirname);
-                                    }
-                                    File.WriteAllBytes(path, fileContract.Bytes);
+                                    Directory.CreateDirectory(dirname);
+                                }
+                                File.WriteAllBytes(path, fileContract.Bytes);
+                                files.Add(path);
+                            }
+                            else if (fileContract.FileStatus == Status.Modified)
+                            {
+                                Console.WriteLine("1");
+                                if (!Directory.Exists(dirname))
+                                {
+                                    Console.WriteLine("2");
+                                    Directory.CreateDirectory(dirname);
+                                }
+                                if (!files.Any(file => file == path))
+                                {
                                     files.Add(path);
                                 }
-                                else if (fileContract.FileStatus == Status.Modified)
+                                File.WriteAllBytes(path, fileContract.Bytes);
+                            }
+                            else if (fileContract.FileStatus == Status.Deleted)
+                            {
+                                this.DeleteFiles(path, false);
+                                this.DeleteDirectory();
+                            }
+                            else if (fileContract.FileStatus == Status.Renamed)
+                            {
+                                var oldPath = Path.Combine(dir, fileContract.OldFilePath);
+                                var oldDirName = Path.GetDirectoryName(oldPath);
+
+                                var oldFileName = Path.GetFileName(oldPath);
+                                var fileName = Path.GetFileName(path);
+
+                                if (files.Any(file => file == oldPath) && oldFileName != fileName)
                                 {
-                                    Console.WriteLine("1");
-                                    if(!Directory.Exists(dirname))
-                                    {
-                                        Console.WriteLine("2");
-                                        Directory.CreateDirectory(dirname);
-                                    }
-                                    if (!files.Any(file => file == path))
-                                    {
-                                        files.Add(path);
-                                    }
-                                    File.WriteAllBytes(path, fileContract.Bytes);
+                                    var newPath = Path.Combine(dir, fileContract.FilePath);
+
+                                    this.RenameFiles(oldPath, newPath, false);
                                 }
-                                else if (fileContract.FileStatus == Status.Deleted)
+                                else
                                 {
-                                    this.DeleteFiles(path, false);
-                                    this.DeleteDirectory();
-                                }
-                                else if (fileContract.FileStatus == Status.Renamed)
-                                {
-                                    var oldPath = Path.Combine(dir, fileContract.OldFilePath);
-                                    var oldDirName = Path.GetDirectoryName(oldPath);
-
-                                    var oldFileName = Path.GetFileName(oldPath);
-                                    var fileName = Path.GetFileName(path);
-
-                                    if (files.Any(file => file == oldPath) && oldFileName != fileName)
+                                    if (Directory.Exists(oldDirName))
                                     {
-                                        var newPath = Path.Combine(dir, fileContract.FilePath);
-
-                                        this.RenameFiles(oldPath, newPath, false);
+                                        this.RenameFiles(oldDirName, dirname, false);
+                                        break;
                                     }
                                     else
                                     {
-                                        if (Directory.Exists(oldDirName))
-                                        {
-                                            this.RenameFiles(oldDirName, dirname, false);
-                                            break;
-                                        } else
-                                        {
-                                            Directory.CreateDirectory(dirname);
-                                            File.WriteAllBytes(path, fileContract.Bytes);
-                                        }
+                                        Directory.CreateDirectory(dirname);
+                                        File.WriteAllBytes(path, fileContract.Bytes);
                                     }
                                 }
                             }
-                            this.DisplayFilesList();
                         }
-
-                        watcher.EnableRaisingEvents = true;
+                        this.DisplayFilesList();
                     }
-                } while (Console.ReadKey(true).Key != ConsoleKey.F12);
-            }
+                    watcher.EnableRaisingEvents = true;
+                    }
+                }
+            } while (Console.ReadKey(true).Key != ConsoleKey.F12);
+            
         }
 
         private IServer ConnectToService()
         {
-            bool invalid = true;
             //string adres;
 
             BasicHttpBinding myBinding = new BasicHttpBinding();
@@ -136,9 +156,9 @@ namespace client
                     Console.WriteLine(ce.Message + "\n");
                     invalid = true;
                 }
-                catch (EndpointNotFoundException ce)
+                catch (EndpointNotFoundException)
                 {
-                    Console.WriteLine(ce.Message + "\n");
+                    Console.WriteLine("Serwer jest wyłączony. Sprawdź połączenie serwera!");
                     invalid = true;
                 }
 
@@ -218,23 +238,90 @@ namespace client
             });
         }
 
-        private void SendFile(string file)
+        private string GetSizeString(long length)
         {
+            long B = 0, KB = 1024, MB = KB * 1024, GB = MB * 1024, TB = GB * 1024;
+            double size = length;
+            string suffix = nameof(B);
+
+            if (length >= TB)
+            {
+                size = Math.Round((double)length / TB, 2);
+                suffix = nameof(TB);
+            }
+            else if (length >= GB)
+            {
+                size = Math.Round((double)length / GB, 2);
+                suffix = nameof(GB);
+            }
+            else if (length >= MB)
+            {
+                size = Math.Round((double)length / MB, 2);
+                suffix = nameof(MB);
+            }
+            else if (length >= KB)
+            {
+                size = Math.Round((double)length / KB, 2);
+                suffix = nameof(KB);
+            }
+
+            return $"{size} {suffix}";
+        }
+
+        private void SendFile()
+        {
+            
+            //Console.WriteLine(GetSizeString(new FileInfo(file).Length));
+
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            // the code that you want to measure comes here
+
+            string fileName = null;
+
+            Console.WriteLine("a");
             try
             {
-
-                var bytes = File.ReadAllBytes(file);
-
-                wcfClient.SetFile(new FileContract
+                while (true)
                 {
-                    FileStatus = Status.New,
-                    Bytes = bytes,
-                    FilePath = file.Substring(dir.Length)
-                });
-                files.Add(file);
-                File.SetLastWriteTime(file, DateTime.Now);
+                    while (q.TryTake(out fileName))
+                    {
+                        var bytes = File.ReadAllBytes(fileName);
+                        wcfClient.SetFile(new FileContract
+                        {
+                            FileStatus = Status.New,
+                            Bytes = bytes,
+                            FilePath = fileName.Substring(dir.Length)
+                        });
+                    }
+                    while (q.Count() == 0)
+                        Thread.Sleep(100);
+                }
+            }
+            catch (InvalidOperationException)
+            {
+            }
+            catch (FileNotFoundException ce)
+            {
+                Console.WriteLine(ce);
+
+            }
+            catch (IOException)
+            {
+                Console.WriteLine("Another user is already using this file.");
+            }
+            catch (Exception e)
+            {
+                System.Console.WriteLine(e.StackTrace);
+            }
 
 
+            /*try
+            {
+
+  
+                    files.Add(file);
+                    File.SetLastWriteTime(file, DateTime.Now);
+                
             }
             catch (FileNotFoundException ce)
             {
@@ -246,6 +333,21 @@ namespace client
                 Console.WriteLine("Another user is already using this file.");
                 this.SendFile(file);
             }
+            catch (Exception e)
+            {
+                System.Console.WriteLine(e.StackTrace);
+            }*/
+
+
+            watch.Stop();
+            var elapsedMs = watch.ElapsedMilliseconds;
+            TimeSpan t = TimeSpan.FromMilliseconds(elapsedMs);
+            string answer = string.Format("{0:D2}h:{1:D2}m:{2:D2}s:{3:D3}ms",
+                                    t.Hours,
+                                    t.Minutes,
+                                    t.Seconds,
+                                    t.Milliseconds);
+            watch.Reset();
         }
 
         private void SendEditFile(string file)
@@ -456,6 +558,7 @@ namespace client
                 //still being written to
                 //or being processed by another thread
                 //or does not exist (has already been processed)
+                Console.WriteLine("File is locked");
                 return true;
             }
             finally
@@ -472,12 +575,19 @@ namespace client
         {
             if (e.ChangeType.ToString() == "Created")
             {
-                tmpDate = File.GetLastWriteTime(e.FullPath);
+                /*tmpDate = File.GetLastWriteTime(e.FullPath);
                 Console.WriteLine(tmpDate);
-                lastModificationDate = DateTime.Now;
+                lastModificationDate = DateTime.Now;*/
+                q = new BlockingCollection<string>();
+                var bg = new BackgroundWorker();
+                bg.DoWork += (s, t) => SendFile();
+                bg.RunWorkerAsync();
+
                 if (!this.isItDirectory(e.FullPath))
                 {
-                    this.SendFile(e.FullPath);
+                    q.Add(e.FullPath);
+
+                    //this.SendFile(e.FullPath);
                 }
                     
                
