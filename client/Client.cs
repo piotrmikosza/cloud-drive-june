@@ -1,15 +1,11 @@
 ﻿using client.ServiceReference1;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.ServiceModel;
-using System.Text;
 using System.Linq;
-using System.Threading;
-using System.Collections.Concurrent;
-using System.ComponentModel;
+using System.Diagnostics;
 
 namespace client
 {
@@ -20,48 +16,71 @@ namespace client
         private EndpointAddress endPoint;
         private ChannelFactory<IServer> myChannelFactory;
         private List<string> files = new List<string>();
+        private List<string> sendFiles = new List<string>();
+        private List<string> receiveFiles = new List<string>();
         private IList<FileContract> listFileContract;
-        private static DateTime lastModificationDate;
+        private DateTime lastModificationDate, modificationDate;
         bool isItConnected = false;
         bool invalid = true;
-        private string fileName = null;
         FileSystemWatcher watcher = new FileSystemWatcher();
-        int count = 0;
-        DateTime tmpDate;
-        BlockingCollection<string> q;
+        private static int i = 0, j = 0;
+        bool fileIsLocked = true;
 
         public Client()
         {
             
-            this.ConnectToService();
+            ConnectToService();
             this.SetFileWatcher();
 
+            var allFiles = GetAllFiles(dir);
+            if(isItConnected)
+            {
+                SendFiles(allFiles);
+                files.AddRange(allFiles);
+                lastModificationDate = DateTime.Now;
+            } else
+            {
+                ConnectToService();
+            }
 
-            
             do
             {
+                /*Console.WriteLine("Aplikacja chodzi");
+                try
+                {
+                    wcfClient.SendMessage("check", "");
+                }
+                catch (EndpointNotFoundException)
+                {
+                    Console.WriteLine("Serwer jest wyłączony. Sprawdź połączenie serwera!");
+                    invalid = true;
+                    isItConnected = false;
+                    ConnectToService();
+                }*/
+
+                if (Console.ReadKey(true).Key == ConsoleKey.F1)
+                {
+                    DisplayFilesList();
+                }
                 if (Console.ReadKey(true).Key == ConsoleKey.F2)
                 {
-                    try
+                    if(modificationDate > lastModificationDate)
                     {
-                        wcfClient.SendMessage("check", "");
+                        SendFiles(sendFiles);
+                        lastModificationDate = modificationDate;
+                        files.AddRange(sendFiles);
+                        sendFiles.Clear();
                     }
-                    catch (EndpointNotFoundException)
-                    {
-                        Console.WriteLine("Serwer jest wyłączony. Sprawdź połączenie serwera!");
-                        invalid = true;
-                        isItConnected = false;
-                        this.ConnectToService();
-                    }
+                    DisplayFilesList();
+                }
 
-
-                    if (isItConnected)
-                    {
-
+                if (Console.ReadKey(true).Key == ConsoleKey.F3)
+                {
                     watcher.EnableRaisingEvents = false;
-                    if (this.GetListFileContract().Count > 0)
+
+                    if (GetListFileContract().Count > 0)
                     {
-                        foreach (FileContract fileContract in this.GetListFileContract())
+                        foreach (FileContract fileContract in GetListFileContract())
                         {
                             var path = Path.Combine(dir, fileContract.FilePath);
                             var dirname = Path.GetDirectoryName(path);
@@ -74,8 +93,9 @@ namespace client
                                 }
                                 File.WriteAllBytes(path, fileContract.Bytes);
                                 files.Add(path);
+                                Console.WriteLine(path);
                             }
-                            else if (fileContract.FileStatus == Status.Modified)
+                            /*else if (fileContract.FileStatus == Status.Modified)
                             {
                                 Console.WriteLine("1");
                                 if (!Directory.Exists(dirname))
@@ -88,11 +108,11 @@ namespace client
                                     files.Add(path);
                                 }
                                 File.WriteAllBytes(path, fileContract.Bytes);
-                            }
+                            }*/
                             else if (fileContract.FileStatus == Status.Deleted)
                             {
                                 this.DeleteFiles(path, false);
-                                this.DeleteDirectory();
+                                this.DeleteDirectory(dir);
                             }
                             else if (fileContract.FileStatus == Status.Renamed)
                             {
@@ -123,31 +143,27 @@ namespace client
                                 }
                             }
                         }
-                        this.DisplayFilesList();
+                        //DisplayFilesList();
                     }
                     watcher.EnableRaisingEvents = true;
-                    }
                 }
             } while (Console.ReadKey(true).Key != ConsoleKey.F12);
-            
         }
 
         private IServer ConnectToService()
         {
             //string adres;
-
-            BasicHttpBinding myBinding = new BasicHttpBinding();
-
+            
             do
             {
                 //Console.WriteLine("Podaj adres serwera \n");
                 //adres = Console.ReadLine();
                 try
                 {
-                    endPoint = new EndpointAddress("http://192.168.1.3/service");
+                    endPoint = new EndpointAddress("http://192.168.0.13/service");
                     //endPoint = new EndpointAddress(adres);
-                    myChannelFactory = new ChannelFactory<IServer>(myBinding, endPoint);
-                    wcfClient = myChannelFactory.CreateChannel();
+                    myChannelFactory = new ChannelFactory<IServer>(endPoint.ToString());
+                    wcfClient = new ServerClient();
                     Console.WriteLine(wcfClient.SendMessage("login", this.getIP()));
                     invalid = false;
                 }
@@ -174,7 +190,7 @@ namespace client
             try
             {
                 listFileContract = new List<FileContract>();
-                listFileContract = wcfClient.GetFiles(this.GetLastModificationDate(this.files));
+                listFileContract = wcfClient.GetFiles(new DateTime(2008, 3, 1, 7, 0, 0));
             }
             catch (EndpointNotFoundException ce)
             {
@@ -183,12 +199,12 @@ namespace client
             return listFileContract;
         }
 
-        private DateTime GetLastModificationDate(List<string> files)
+        private DateTime GetModificationDate(List<string> files)
         {
             List<DateTime> dates = new List<DateTime>();
             if (files.Count() != 0)
             {
-                foreach (string file in files)
+                foreach (var file in files)
                 {
                     dates.Add(File.GetLastWriteTime(file));
                 }
@@ -197,35 +213,33 @@ namespace client
                 return lastModificationDate;
             } else
             {
-                return new DateTime();
+                return new DateTime(2008, 3, 1, 7, 0, 0);
             }
         }
 
         private List<string> GetAllFiles(string sourceDir)
         {
+            var localFiles = new List<string>();
             try
             {
                 foreach (string file in Directory.GetFiles(sourceDir))
                 {
-                    files.Add(file);
+                    localFiles.Add(file);
                 }
                 foreach (string fl in Directory.GetDirectories(sourceDir))
                 {
-                    files.AddRange(GetAllFiles(fl));
+                    localFiles.AddRange(GetAllFiles(fl));
                 }
             }
             catch (Exception ex)
             {
-
                 Console.WriteLine(ex.Message);
             }
-
-            return files;
+            return localFiles;
         }
 
         private void SendFiles(List<string> files)
         {
-
             files.ForEach(file =>
             {
                 var bytes = File.ReadAllBytes(file);
@@ -268,76 +282,42 @@ namespace client
             return $"{size} {suffix}";
         }
 
-        private void SendFile()
+        private void SendFile(string file)
         {
-            
-            //Console.WriteLine(GetSizeString(new FileInfo(file).Length));
+            files.Add(file);
 
-            var watch = System.Diagnostics.Stopwatch.StartNew();
-            // the code that you want to measure comes here
+            byte[] bytes = null;
 
-            string fileName = null;
+            i++;
+            Console.WriteLine("Licznik i " + i);
+            Console.WriteLine("e.FullPath " + file);
 
-            Console.WriteLine("a");
-            try
+            do
             {
-                while (true)
+                try
                 {
-                    while (q.TryTake(out fileName))
-                    {
-                        var bytes = File.ReadAllBytes(fileName);
-                        wcfClient.SetFile(new FileContract
-                        {
-                            FileStatus = Status.New,
-                            Bytes = bytes,
-                            FilePath = fileName.Substring(dir.Length)
-                        });
-                    }
-                    while (q.Count() == 0)
-                        Thread.Sleep(100);
+                    bytes = File.ReadAllBytes(file);
+                    fileIsLocked = false;
+                    Console.WriteLine("File is not locked " + i);
                 }
-            }
-            catch (InvalidOperationException)
-            {
-            }
-            catch (FileNotFoundException ce)
-            {
-                Console.WriteLine(ce);
+                catch (IOException)
+                {
+                    Console.WriteLine("Plik jest używany przez inny proces " + i);
+                    fileIsLocked = true;
+                }
+            } while (fileIsLocked);
 
-            }
-            catch (IOException)
-            {
-                Console.WriteLine("Another user is already using this file.");
-            }
-            catch (Exception e)
-            {
-                System.Console.WriteLine(e.StackTrace);
-            }
+            Console.WriteLine(bytes.Length);
+            Console.WriteLine(fileIsLocked);
 
+            var watch = Stopwatch.StartNew();
 
-            /*try
+            wcfClient.SetFile(new FileContract
             {
-
-  
-                    files.Add(file);
-                    File.SetLastWriteTime(file, DateTime.Now);
-                
-            }
-            catch (FileNotFoundException ce)
-            {
-                Console.WriteLine(ce);
-
-            }
-            catch (IOException)
-            {
-                Console.WriteLine("Another user is already using this file.");
-                this.SendFile(file);
-            }
-            catch (Exception e)
-            {
-                System.Console.WriteLine(e.StackTrace);
-            }*/
-
+                FileStatus = Status.New,
+                Bytes = bytes,
+                FilePath = file.Substring(dir.Length)
+            });
 
             watch.Stop();
             var elapsedMs = watch.ElapsedMilliseconds;
@@ -347,7 +327,9 @@ namespace client
                                     t.Minutes,
                                     t.Seconds,
                                     t.Milliseconds);
-            watch.Reset();
+            if(!watch.IsRunning)
+                Console.WriteLine(answer);
+            //watch.Reset();
         }
 
         private void SendEditFile(string file)
@@ -367,22 +349,24 @@ namespace client
             catch (IOException)
             {
                 Console.WriteLine("Another user is already using this file.");
-                this.SendEditFile(file);
+                //this.SendEditFile(file);
             }
         }
 
-        private void DeleteDirectory()
+        private void DeleteDirectory(string sDir)
         {
-            if (Directory.Exists(dir))
+            if (Directory.Exists(sDir))
             {
-                //Delete all child Directories if they are empty
-
-                foreach (string subdirectory in Directory.GetDirectories(dir))
+                foreach (var subdirectory in Directory.GetDirectories(sDir))
                 {
-                    string[] file = Directory.GetFiles(subdirectory, "*.*");
-
-                    if (file.Length == 0)
+                    if (Directory.GetFileSystemEntries(subdirectory).Length == 0)
+                    {
                         Directory.Delete(subdirectory);
+                    }
+                    else
+                    {
+                        DeleteDirectory(subdirectory);
+                    }
                 }
             }
         }
@@ -417,8 +401,6 @@ namespace client
             }
             if(itIsDirectory)
             {
-                Console.WriteLine("WESZŁO");
-                Console.ReadLine();
                 foreach (string file in files)
                 {
                     if (file.Contains(directory))
@@ -542,76 +524,29 @@ namespace client
             {
                 Console.WriteLine(x + " " + File.GetLastWriteTime(x) + ":" + File.GetLastWriteTime(x).Millisecond);
             });
-
-        }
-
-        private bool IsFileLocked(FileInfo file)
-        {
-            FileStream stream = null;
-            try
-            {
-                stream = file.Open(FileMode.Open, FileAccess.Read, FileShare.None);
-            }
-            catch (IOException)
-            {
-                //the file is unavailable because it is:
-                //still being written to
-                //or being processed by another thread
-                //or does not exist (has already been processed)
-                Console.WriteLine("File is locked");
-                return true;
-            }
-            finally
-            {
-                if (stream != null)
-                    stream.Close();
-            }
-
-            //file is not locked
-            return false;
         }
 
         private void OnChanged(object source, FileSystemEventArgs e)
         {
-            if (e.ChangeType.ToString() == "Created")
-            {
-                /*tmpDate = File.GetLastWriteTime(e.FullPath);
-                Console.WriteLine(tmpDate);
-                lastModificationDate = DateTime.Now;*/
-                q = new BlockingCollection<string>();
-                var bg = new BackgroundWorker();
-                bg.DoWork += (s, t) => SendFile();
-                bg.RunWorkerAsync();
-
-                if (!this.isItDirectory(e.FullPath))
-                {
-                    q.Add(e.FullPath);
-
-                    //this.SendFile(e.FullPath);
-                }
-                    
-               
-                this.DisplayFilesList();
+            if (e.ChangeType == WatcherChangeTypes.Created) {
+                modificationDate = DateTime.Now;
+                if (!isItDirectory(e.FullPath))
+                    sendFiles.Add(e.FullPath);
             }
-            if (e.ChangeType.ToString() == "Deleted")
+            if (e.ChangeType == WatcherChangeTypes.Deleted)
             {
-
                 lastModificationDate = DateTime.Now;
                 this.DeleteFiles(e.FullPath, true);
-
                 this.DisplayFilesList();
             }
-            if (e.ChangeType.ToString() == "Changed")
-            {
-               
+            if (e.ChangeType == WatcherChangeTypes.Changed) {
+
             }
-            
         }
 
         private void OnRenamed(object source, RenamedEventArgs e)
         {
             this.RenameFiles(e.OldFullPath, e.FullPath, true);
-
             this.DisplayFilesList();
         }
 

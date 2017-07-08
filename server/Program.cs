@@ -148,7 +148,7 @@ namespace server
             {
                 Directory.CreateDirectory(dirname);
             }
-
+            
             File.WriteAllBytes(path, fileContract.Bytes);
 
             fileContract.LastModification = DateTime.Now;
@@ -166,18 +166,20 @@ namespace server
             this.DisplayFilesList();
         }
 
-        private void DeleteDirectory()
+        private void DeleteDirectory(string sDir)
         {
-            if (Directory.Exists(dir))
+            if (Directory.Exists(sDir))
             {
-                //Delete all child Directories if they are empty
-
-                foreach (string subdirectory in Directory.GetDirectories(dir))
+                foreach (var subdirectory in Directory.GetDirectories(sDir))
                 {
-                    string[] file = Directory.GetFiles(subdirectory, "*.*");
-
-                    if (file.Length == 0)
+                    if (Directory.GetFileSystemEntries(subdirectory).Length == 0)
+                    {
                         Directory.Delete(subdirectory);
+                    }
+                    else
+                    {
+                        DeleteDirectory(subdirectory);
+                    }
                 }
             }
         }
@@ -186,7 +188,7 @@ namespace server
         {
             var path = Path.Combine(dir, fileContract.FilePath);
             File.Delete(path);
-            DeleteDirectory();
+            DeleteDirectory(dir);
 
             if (FilesDb.Any(file => file.FilePath == fileContract.FilePath))
             {
