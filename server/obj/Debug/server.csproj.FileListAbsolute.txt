@@ -28,3 +28,4 @@ C:\Users\piotr.mikosza\Desktop\Nowy folder\server\obj\Debug\server.exe
 C:\Users\piotr.mikosza\Desktop\Nowy folder\server\obj\Debug\server.pdb
 C:\Users\piotr.mikosza\Desktop\Nowy folder\server\bin\Debug\server.exe
 C:\Users\piotr.mikosza\Desktop\Nowy folder\server\bin\Debug\server.pdb
+C:\Users\piotr.mikosza\Desktop\Nowy folder\server\obj\Debug\server.csprojResolveAssemblyReference.cache

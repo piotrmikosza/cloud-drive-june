@@ -145,6 +145,7 @@ namespace client
                         }
                         //DisplayFilesList();
                     }
+                    lastModificationDate = DateTime.Now;
                     watcher.EnableRaisingEvents = true;
                 }
             } while (Console.ReadKey(true).Key != ConsoleKey.F12);
@@ -162,7 +163,7 @@ namespace client
                 {
                     endPoint = new EndpointAddress("http://192.168.0.13/service");
                     //endPoint = new EndpointAddress(adres);
-                    myChannelFactory = new ChannelFactory<IServer>(endPoint.ToString());
+                    myChannelFactory = new ChannelFactory<IServer>();
                     wcfClient = new ServerClient();
                     Console.WriteLine(wcfClient.SendMessage("login", this.getIP()));
                     invalid = false;
@@ -190,7 +191,7 @@ namespace client
             try
             {
                 listFileContract = new List<FileContract>();
-                listFileContract = wcfClient.GetFiles(new DateTime(2008, 3, 1, 7, 0, 0));
+                listFileContract = wcfClient.GetFiles(lastModificationDate);
             }
             catch (EndpointNotFoundException ce)
             {
