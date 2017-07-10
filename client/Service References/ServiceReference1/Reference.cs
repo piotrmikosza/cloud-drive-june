@@ -32,6 +32,9 @@ namespace client.ServiceReference1 {
         private client.ServiceReference1.Status FileStatusField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private System.IO.FileStream FileStreamField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
         private System.DateTime LastModificationField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
@@ -82,6 +85,19 @@ namespace client.ServiceReference1 {
                 if ((this.FileStatusField.Equals(value) != true)) {
                     this.FileStatusField = value;
                     this.RaisePropertyChanged("FileStatus");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public System.IO.FileStream FileStream {
+            get {
+                return this.FileStreamField;
+            }
+            set {
+                if ((object.ReferenceEquals(this.FileStreamField, value) != true)) {
+                    this.FileStreamField = value;
+                    this.RaisePropertyChanged("FileStream");
                 }
             }
         }

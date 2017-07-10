@@ -1,31 +1,5 @@
-C:\Users\Piotr\Documents\Visual Studio 2015\Projects\server\server\bin\Debug\server.exe.config
-C:\Users\Piotr\Documents\Visual Studio 2015\Projects\server\server\bin\Debug\server.exe
-C:\Users\Piotr\Documents\Visual Studio 2015\Projects\server\server\bin\Debug\server.pdb
-C:\Users\Piotr\Documents\Visual Studio 2015\Projects\server\server\obj\Debug\server.exe
-C:\Users\Piotr\Documents\Visual Studio 2015\Projects\server\server\obj\Debug\server.pdb
-C:\Users\piotr.mikosza\Desktop\cloud-drive-june-master\server\bin\Debug\server.exe.config
-C:\Users\piotr.mikosza\Desktop\cloud-drive-june-master\server\bin\Debug\server.exe
-C:\Users\piotr.mikosza\Desktop\cloud-drive-june-master\server\bin\Debug\server.pdb
-C:\Users\piotr.mikosza\Desktop\cloud-drive-june-master\server\obj\Debug\server.exe
-C:\Users\piotr.mikosza\Desktop\cloud-drive-june-master\server\obj\Debug\server.pdb
-C:\Users\piotr.mikosza\Desktop\drive\server\bin\Debug\server.exe.config
-C:\Users\piotr.mikosza\Desktop\drive\server\bin\Debug\server.exe
-C:\Users\piotr.mikosza\Desktop\drive\server\bin\Debug\server.pdb
-C:\Users\piotr.mikosza\Desktop\drive\server\obj\Debug\server.exe
-C:\Users\piotr.mikosza\Desktop\drive\server\obj\Debug\server.pdb
-C:\Users\Piotr\Desktop\server\server\bin\Debug\server.exe.config
-C:\Users\Piotr\Desktop\server\server\bin\Debug\server.exe
-C:\Users\Piotr\Desktop\server\server\bin\Debug\server.pdb
-C:\Users\Piotr\Desktop\server\server\obj\Debug\server.exe
-C:\Users\Piotr\Desktop\server\server\obj\Debug\server.pdb
-C:\Users\Piotr\Desktop\drive\server\bin\Debug\server.exe.config
-C:\Users\Piotr\Desktop\drive\server\bin\Debug\server.exe
-C:\Users\Piotr\Desktop\drive\server\bin\Debug\server.pdb
-C:\Users\Piotr\Desktop\drive\server\obj\Debug\server.exe
-C:\Users\Piotr\Desktop\drive\server\obj\Debug\server.pdb
 C:\Users\piotr.mikosza\Desktop\Nowy folder\server\bin\Debug\server.exe.config
 C:\Users\piotr.mikosza\Desktop\Nowy folder\server\obj\Debug\server.exe
 C:\Users\piotr.mikosza\Desktop\Nowy folder\server\obj\Debug\server.pdb
 C:\Users\piotr.mikosza\Desktop\Nowy folder\server\bin\Debug\server.exe
 C:\Users\piotr.mikosza\Desktop\Nowy folder\server\bin\Debug\server.pdb
-C:\Users\piotr.mikosza\Desktop\Nowy folder\server\obj\Debug\server.csprojResolveAssemblyReference.cache

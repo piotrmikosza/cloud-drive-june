@@ -6,17 +6,17 @@ using System.Net;
 using System.ServiceModel;
 using System.Linq;
 using System.Diagnostics;
+using System.Configuration;
 
 namespace client
 {
     public class Client
     {
         const string dir = @"C:\From\";
-        private IServer wcfClient;
+        private ServerClient wcfClient, wcfClient1;
         private EndpointAddress endPoint;
-        private ChannelFactory<IServer> myChannelFactory;
         private List<string> files = new List<string>();
-        private List<string> sendFiles = new List<string>();
+        private List<string> listSendFiles = new List<string>();
         private List<string> receiveFiles = new List<string>();
         private IList<FileContract> listFileContract;
         private DateTime lastModificationDate, modificationDate;
@@ -28,6 +28,9 @@ namespace client
 
         public Client()
         {
+
+            if (!Directory.Exists(dir))
+                Directory.CreateDirectory(dir);
             
             ConnectToService();
             this.SetFileWatcher();
@@ -35,7 +38,21 @@ namespace client
             var allFiles = GetAllFiles(dir);
             if(isItConnected)
             {
+                var watch = Stopwatch.StartNew();
+
                 SendFiles(allFiles);
+
+                watch.Stop();
+                var elapsedMs = watch.ElapsedMilliseconds;
+                TimeSpan t = TimeSpan.FromMilliseconds(elapsedMs);
+                string answer = string.Format("{0:D2}h:{1:D2}m:{2:D2}s:{3:D3}ms",
+                                        t.Hours,
+                                        t.Minutes,
+                                        t.Seconds,
+                                        t.Milliseconds);
+                Console.WriteLine(answer);
+
+
                 files.AddRange(allFiles);
                 lastModificationDate = DateTime.Now;
             } else
@@ -58,6 +75,18 @@ namespace client
                     ConnectToService();
                 }*/
 
+                if (Console.ReadKey(true).Key == ConsoleKey.F4)
+                {
+                    for (int i = 0; i < 1; i++)
+                    {
+                        FileStream fs = new FileStream(@"C:\From\file"+i, FileMode.CreateNew);
+                        fs.Seek(2048L * 1024 * 1024, SeekOrigin.Begin);
+                        fs.WriteByte(0);
+                        fs.Close();
+                    }
+
+                }
+
                 if (Console.ReadKey(true).Key == ConsoleKey.F1)
                 {
                     DisplayFilesList();
@@ -66,10 +95,23 @@ namespace client
                 {
                     if(modificationDate > lastModificationDate)
                     {
-                        SendFiles(sendFiles);
+                        var watch = Stopwatch.StartNew();
+
+                        SendFiles(listSendFiles);
+
+                        watch.Stop();
+                        var elapsedMs = watch.ElapsedMilliseconds;
+                        TimeSpan t = TimeSpan.FromMilliseconds(elapsedMs);
+                        string answer = string.Format("{0:D2}h:{1:D2}m:{2:D2}s:{3:D3}ms",
+                                                t.Hours,
+                                                t.Minutes,
+                                                t.Seconds,
+                                                t.Milliseconds);
+                        Console.WriteLine(answer);
+
                         lastModificationDate = modificationDate;
-                        files.AddRange(sendFiles);
-                        sendFiles.Clear();
+                        files.AddRange(listSendFiles);
+                        listSendFiles.Clear();
                     }
                     DisplayFilesList();
                 }
@@ -151,41 +193,43 @@ namespace client
             } while (Console.ReadKey(true).Key != ConsoleKey.F12);
         }
 
-        private IServer ConnectToService()
+        private void ConnectToService()
         {
             //string adres;
-            
+
             do
             {
-                //Console.WriteLine("Podaj adres serwera \n");
+                //Console.WriteLine("Podaj adres serwera");
                 //adres = Console.ReadLine();
+
                 try
                 {
-                    endPoint = new EndpointAddress("http://192.168.0.13/service");
-                    //endPoint = new EndpointAddress(adres);
-                    myChannelFactory = new ChannelFactory<IServer>();
-                    wcfClient = new ServerClient();
-                    Console.WriteLine(wcfClient.SendMessage("login", this.getIP()));
+                    //endPoint = new EndpointAddress("http://192.168.1.7");
+                    wcfClient = new ServerClient(/*"basicEndpoint", endPoint*/);
+                    Console.WriteLine(wcfClient.SendMessage("login", getIP()));
                     invalid = false;
                 }
-                catch (UriFormatException ce)
+                catch (UriFormatException)
                 {
-                    Console.WriteLine(ce.Message + "\n");
+                    Console.WriteLine("Błędny format adresu \n");
                     invalid = true;
                 }
                 catch (EndpointNotFoundException)
                 {
-                    Console.WriteLine("Serwer jest wyłączony. Sprawdź połączenie serwera!");
+                    Console.WriteLine("Nieprawidłowy adres \n");
+                    invalid = true;
+                }
+                catch (ProtocolException)
+                {
+                    Console.WriteLine("Brak utworzonej usługi pod podanym adresem \n");
                     invalid = true;
                 }
 
             } while (invalid);
 
             isItConnected = true;
-
-            return wcfClient;
         }
-
+   
         private IList<FileContract> GetListFileContract()
         {
             try
@@ -239,17 +283,40 @@ namespace client
             return localFiles;
         }
 
+        public byte[] ReadAllBytes(string fileName)
+        {
+            byte[] buffer = null;
+            using (FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read))
+            {
+                buffer = new byte[fs.Length];
+                fs.Read(buffer, 0, (int)fs.Length);
+            }
+            return buffer;
+        }
+
         private void SendFiles(List<string> files)
         {
+            Int64 countBytes = 0;
+
             files.ForEach(file =>
             {
-                var bytes = File.ReadAllBytes(file);
+                //var bytes = ReadAllBytes(file);
+                //FileInfo fileInfo = new FileInfo(file);
+                FileStream fileStream = File.Open(file, FileMode.Open, FileAccess.ReadWrite);           
+
+        //countBytes += bytes.Length;
+
+                //Console.WriteLine(countBytes);
+
                 wcfClient.SetFile(new FileContract
                 {
                     FileStatus = Status.New,
-                    Bytes = bytes,
+                    FileStream = fileStream,
+                    //Bytes = bytes,
                     FilePath = file.Substring(dir.Length)
                 });
+                
+                
             });
         }
 
@@ -328,8 +395,7 @@ namespace client
                                     t.Minutes,
                                     t.Seconds,
                                     t.Milliseconds);
-            if(!watch.IsRunning)
-                Console.WriteLine(answer);
+            Console.WriteLine(answer);
             //watch.Reset();
         }
 
@@ -532,7 +598,7 @@ namespace client
             if (e.ChangeType == WatcherChangeTypes.Created) {
                 modificationDate = DateTime.Now;
                 if (!isItDirectory(e.FullPath))
-                    sendFiles.Add(e.FullPath);
+                    listSendFiles.Add(e.FullPath);
             }
             if (e.ChangeType == WatcherChangeTypes.Deleted)
             {
@@ -540,9 +606,7 @@ namespace client
                 this.DeleteFiles(e.FullPath, true);
                 this.DisplayFilesList();
             }
-            if (e.ChangeType == WatcherChangeTypes.Changed) {
-
-            }
+            if (e.ChangeType == WatcherChangeTypes.Changed) { }
         }
 
         private void OnRenamed(object source, RenamedEventArgs e)

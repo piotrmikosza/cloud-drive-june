@@ -7,23 +7,44 @@ using System.Collections.Generic;
 using System.Text;
 using System.Linq;
 using System.Threading;
+using System.ServiceModel.Description;
+using System.Net;
 
 namespace server
 {
+
+
     public class Program
     {
+        const string dir = @"C:\To\";
+
         public Program()
         {
-            this.ClearFolder(@"C:\To");
-            ServiceHost host = new ServiceHost(typeof(Server));
-            host.Open();
-
-            Console.ReadLine();
+            RunServer();
         }
 
         static void Main(string[] args)
         {
             new Program();
+        }
+
+        private void RunServer()
+        {
+            if (!Directory.Exists(dir))
+                Directory.CreateDirectory(dir);
+
+            ClearFolder(dir);
+
+            var hostName = Dns.GetHostName();
+            var myIP = Dns.GetHostByName(hostName).AddressList[0].ToString();
+            var baseAddress = "http://" + myIP;
+
+            ServiceHost host = new ServiceHost(typeof(Server)/*, new Uri(baseAddress)*/);
+
+            host.Open();
+
+            Console.WriteLine("Server is ready...");
+            Console.ReadLine();
         }
 
         private void ClearFolder(string folderName)
@@ -56,12 +77,14 @@ namespace server
         string SendMessage(string command, string value);
     }
 
-    // Use a data contract as illustrated in the sample below to add composite types to service operations.
     [DataContract]
     public class FileContract
     {
         [DataMember]
         public byte[] Bytes { get; set; }
+
+        [DataMember]
+        public FileStream FileStream { get; set; } 
 
         [DataMember]
         public string OldFilePath { get; set; }
@@ -94,6 +117,7 @@ namespace server
 
     public class Server : IServer
     {
+        
         const string dir = @"C:\To\";
 
         private static List<FileContract> FilesDb { get; set; } = new List<FileContract>();
@@ -139,7 +163,7 @@ namespace server
             }
         }
 
-        private void SetNewFile(FileContract fileContract)
+        private async void SetNewFile(FileContract fileContract)
         {
             var path = Path.Combine(dir, fileContract.FilePath);
             var dirname = Path.GetDirectoryName(path);
@@ -148,10 +172,22 @@ namespace server
             {
                 Directory.CreateDirectory(dirname);
             }
-            
-            File.WriteAllBytes(path, fileContract.Bytes);
 
-            fileContract.LastModification = DateTime.Now;
+            byte[] bytes = new byte[fileContract.FileStream.Length];
+
+            File.WriteAllBytes(path, bytes);
+
+            //File.Open(path, System.IO.FileMode.Append, System.IO.FileAccess.Write);
+
+
+            //FileStream outputStream = File.Create(path);
+
+
+            // fileContract.FileStream.CopyTo(outputStream);
+
+            //File.WriteAllBytes(path, fileContract.Bytes);
+
+            /*fileContract.LastModification = DateTime.Now;
             fileContract.LastModification = fileContract.LastModification.AddTicks(-fileContract.LastModification.Ticks % TimeSpan.TicksPerSecond);
 
             if (FilesDb.Any(file => file.FilePath == fileContract.FilePath))
@@ -161,9 +197,9 @@ namespace server
             } else
             {
                 FilesDb.Add(fileContract);
-            }
+            }*/
 
-            this.DisplayFilesList();
+            //this.DisplayFilesList();
         }
 
         private void DeleteDirectory(string sDir)
