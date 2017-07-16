@@ -25,6 +25,7 @@ namespace client
         FileSystemWatcher watcher = new FileSystemWatcher();
         private static int i = 0, j = 0;
         bool fileIsLocked = true;
+        private static int bajty = 0;
 
         public Client()
         {
@@ -40,7 +41,7 @@ namespace client
             {
                 var watch = Stopwatch.StartNew();
 
-                SendFiles(allFiles);
+                //SendFiles(allFiles);
 
                 watch.Stop();
                 var elapsedMs = watch.ElapsedMilliseconds;
@@ -53,7 +54,7 @@ namespace client
                 Console.WriteLine(answer);
 
 
-                files.AddRange(allFiles);
+                //files.AddRange(allFiles);
                 lastModificationDate = DateTime.Now;
             } else
             {
@@ -80,7 +81,7 @@ namespace client
                     for (int i = 0; i < 1; i++)
                     {
                         FileStream fs = new FileStream(@"C:\From\file"+i, FileMode.CreateNew);
-                        fs.Seek(2048L * 1024 * 1024, SeekOrigin.Begin);
+                        fs.Seek(2048L * 1024 * 1024 * 2, SeekOrigin.Begin);
                         fs.WriteByte(0);
                         fs.Close();
                     }
@@ -91,13 +92,19 @@ namespace client
                 {
                     DisplayFilesList();
                 }
+
+                if (Console.ReadKey(true).Key == ConsoleKey.F5)
+                {
+                    SendFiles();
+                }
+
                 if (Console.ReadKey(true).Key == ConsoleKey.F2)
                 {
                     if(modificationDate > lastModificationDate)
                     {
                         var watch = Stopwatch.StartNew();
 
-                        SendFiles(listSendFiles);
+                        //SendFiles(listSendFiles);
 
                         watch.Stop();
                         var elapsedMs = watch.ElapsedMilliseconds;
@@ -283,41 +290,72 @@ namespace client
             return localFiles;
         }
 
-        public byte[] ReadAllBytes(string fileName)
+        private void SendFiles(/*List<string> files*/)
         {
-            byte[] buffer = null;
-            using (FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read))
+
+           // files.ForEach(file =>
+           // {
+                FileStream fs = new FileStream(@"C:/From/file0", FileMode.Open, FileAccess.Read);
+                long fLength = fs.Length;
+                Console.WriteLine("fLength " + fLength);
+                
+                int numBytesToRead = (int)fLength;
+                Console.WriteLine("numBytesToRead " + numBytesToRead);
+            int i = 0;
+
+            int zmienna = 104857600;
+            
+            do
             {
-                buffer = new byte[fs.Length];
-                fs.Read(buffer, 0, (int)fs.Length);
-            }
-            return buffer;
-        }
-
-        private void SendFiles(List<string> files)
-        {
-            Int64 countBytes = 0;
-
-            files.ForEach(file =>
-            {
-                //var bytes = ReadAllBytes(file);
-                //FileInfo fileInfo = new FileInfo(file);
-                FileStream fileStream = File.Open(file, FileMode.Open, FileAccess.ReadWrite);           
-
-        //countBytes += bytes.Length;
-
-                //Console.WriteLine(countBytes);
-
-                wcfClient.SetFile(new FileContract
+                if (fLength > zmienna)
                 {
-                    FileStatus = Status.New,
-                    FileStream = fileStream,
-                    //Bytes = bytes,
-                    FilePath = file.Substring(dir.Length)
-                });
-                
-                
-            });
+                    byte[] bytes = new byte[zmienna];
+
+                    while (numBytesToRead > 0)
+                    {
+                        int n = fs.Read(bytes, 1, 10);
+
+                        // Break when the end of the file is reached.
+                        if (n == 0) break;
+
+                        bajty += n;
+                        numBytesToRead -= n;
+
+                        if (numBytesToRead != 0)
+                            numBytesToRead -= bajty;
+                    }
+
+                    bajty += zmienna;
+
+
+                    numBytesToRead = bytes.Length;
+
+                    wcfClient.SetFile(new FileContract
+                    {
+                        FileStatus = Status.New,
+                        Bytes = bytes,
+                        FilePath = @"/file0"
+                    });
+                    
+                }
+            } while (i != 2);
+
+            fs.Flush();
+            fs.Close();
+            fs.Dispose();
+
+            // Write the byte array to the other FileStream.
+            /*FileStream fsNew = new FileStream(@"C:/From/plik", FileMode.Create, FileAccess.Write);
+                fsNew.Write(bytes, 0, numBytesToRead);
+                fsNew.Flush();
+                fsNew.Close();
+                fsNew.Dispose();*/
+
+            //var bytess = File.ReadAllBytes(@"C:/From/file0");
+
+
+            Console.WriteLine("FINISH");
+            // });
         }
 
         private string GetSizeString(long length)

@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading;
 using System.ServiceModel.Description;
 using System.Net;
+using System.IO.MemoryMappedFiles;
 
 namespace server
 {
@@ -75,7 +76,10 @@ namespace server
 
         [OperationContract]
         string SendMessage(string command, string value);
+
     }
+
+
 
     [DataContract]
     public class FileContract
@@ -85,6 +89,9 @@ namespace server
 
         [DataMember]
         public FileStream FileStream { get; set; } 
+
+        [DataMember]
+        public Stream Stream { get; set; }
 
         [DataMember]
         public string OldFilePath { get; set; }
@@ -121,6 +128,7 @@ namespace server
         const string dir = @"C:\To\";
 
         private static List<FileContract> FilesDb { get; set; } = new List<FileContract>();
+        private static int bajty = 0;
 
         public IList<FileContract> GetFiles(DateTime lastModification)
         {
@@ -173,19 +181,35 @@ namespace server
                 Directory.CreateDirectory(dirname);
             }
 
-            byte[] bytes = new byte[fileContract.FileStream.Length];
-
-            File.WriteAllBytes(path, bytes);
-
-            //File.Open(path, System.IO.FileMode.Append, System.IO.FileAccess.Write);
-
-
-            //FileStream outputStream = File.Create(path);
-
-
-            // fileContract.FileStream.CopyTo(outputStream);
-
             //File.WriteAllBytes(path, fileContract.Bytes);
+            FileStream fsNew;
+            
+            if(FilesDb.Any(file => file.FilePath == fileContract.FilePath))
+            {
+                var file = FilesDb.Single(f => f.FilePath == fileContract.FilePath);
+
+                bajty += fileContract.Bytes.Length;
+
+                if(file.FileStatus == Status.New)
+                {
+                    fsNew = new FileStream(@"C:/To/file0", FileMode.Append, FileAccess.Write);
+                    fsNew.Write(fileContract.Bytes, bajty, fileContract.Bytes.Length);
+                    fsNew.Flush();
+                    fsNew.Close();
+                    fsNew.Dispose();
+
+                }
+            } else
+            {
+                fsNew = new FileStream(@"C:/To/file0", FileMode.Create, FileAccess.Write);
+                fsNew.Write(fileContract.Bytes, 0, fileContract.Bytes.Length);
+                fsNew.Flush();
+                fsNew.Close();
+                fsNew.Dispose();
+                FilesDb.Add(fileContract);
+            }
+
+
 
             /*fileContract.LastModification = DateTime.Now;
             fileContract.LastModification = fileContract.LastModification.AddTicks(-fileContract.LastModification.Ticks % TimeSpan.TicksPerSecond);
@@ -196,7 +220,7 @@ namespace server
                 file.FileStatus = fileContract.FileStatus;
             } else
             {
-                FilesDb.Add(fileContract);
+                
             }*/
 
             //this.DisplayFilesList();

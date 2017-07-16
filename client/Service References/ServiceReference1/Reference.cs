@@ -17,6 +17,7 @@ namespace client.ServiceReference1 {
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
     [System.Runtime.Serialization.DataContractAttribute(Name="FileContract", Namespace="http://schemas.datacontract.org/2004/07/server")]
     [System.SerializableAttribute()]
+    [System.Runtime.Serialization.KnownTypeAttribute(typeof(System.IO.FileStream))]
     public partial class FileContract : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged {
         
         [System.NonSerializedAttribute()]
@@ -39,6 +40,9 @@ namespace client.ServiceReference1 {
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
         private string OldFilePathField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private System.IO.Stream StreamField;
         
         [global::System.ComponentModel.BrowsableAttribute(false)]
         public System.Runtime.Serialization.ExtensionDataObject ExtensionData {
@@ -124,6 +128,19 @@ namespace client.ServiceReference1 {
                 if ((object.ReferenceEquals(this.OldFilePathField, value) != true)) {
                     this.OldFilePathField = value;
                     this.RaisePropertyChanged("OldFilePath");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public System.IO.Stream Stream {
+            get {
+                return this.StreamField;
+            }
+            set {
+                if ((object.ReferenceEquals(this.StreamField, value) != true)) {
+                    this.StreamField = value;
+                    this.RaisePropertyChanged("Stream");
                 }
             }
         }

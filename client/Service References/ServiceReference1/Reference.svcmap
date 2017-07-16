@@ -19,16 +19,16 @@
     <ServiceContractMappings />
   </ClientOptions>
   <MetadataSources>
-    <MetadataSource Address="http://192.168.1.7" Protocol="http" SourceId="1" />
+    <MetadataSource Address="http://localhost:8080/StreamService" Protocol="http" SourceId="1" />
   </MetadataSources>
   <Metadata>
-    <MetadataFile FileName="item4.xsd" MetadataType="Schema" ID="e40ec33f-65ad-40b7-be7e-48924508d6e8" SourceId="1" SourceUrl="http://192.168.1.7/?xsd=xsd4" />
-    <MetadataFile FileName="Server1.wsdl" MetadataType="Wsdl" ID="6d4dac3e-eacd-47b3-8468-28dd094f34f8" SourceId="1" SourceUrl="http://192.168.1.7/?wsdl" />
-    <MetadataFile FileName="item.xsd" MetadataType="Schema" ID="323414b1-84ae-4cfa-82e9-26d1d5859351" SourceId="1" SourceUrl="http://192.168.1.7/?xsd=xsd2" />
-    <MetadataFile FileName="item1.xsd" MetadataType="Schema" ID="f32ee074-8108-4fea-8a08-7325cc47cdeb" SourceId="1" SourceUrl="http://192.168.1.7/?xsd=xsd0" />
-    <MetadataFile FileName="item2.xsd" MetadataType="Schema" ID="8b8befe6-7284-46c0-a8b7-f1c67a56753e" SourceId="1" SourceUrl="http://192.168.1.7/?xsd=xsd3" />
-    <MetadataFile FileName="item1.disco" MetadataType="Disco" ID="02d7836d-f4cf-4403-9eec-37e42fb567e2" SourceId="1" SourceUrl="http://192.168.1.7/?disco" />
-    <MetadataFile FileName="item3.xsd" MetadataType="Schema" ID="3408b7e7-1aa8-4078-94ba-db56c0287f8b" SourceId="1" SourceUrl="http://192.168.1.7/?xsd=xsd1" />
+    <MetadataFile FileName="StreamService.xsd" MetadataType="Schema" ID="a071e285-f7ec-485e-bf8f-c71bdb5e4f62" SourceId="1" SourceUrl="http://localhost:8080/StreamService?xsd=xsd0" />
+    <MetadataFile FileName="StreamService1.xsd" MetadataType="Schema" ID="6645d867-7ec0-4796-a621-39e09675467d" SourceId="1" SourceUrl="http://localhost:8080/StreamService?xsd=xsd1" />
+    <MetadataFile FileName="StreamService.disco" MetadataType="Disco" ID="d75aae2a-cf21-420c-91c0-1d7d1a56ed15" SourceId="1" SourceUrl="http://localhost:8080/StreamService?disco" />
+    <MetadataFile FileName="StreamService2.xsd" MetadataType="Schema" ID="16860a94-4e1b-43fe-864e-72aaf8fd7269" SourceId="1" SourceUrl="http://localhost:8080/StreamService?xsd=xsd3" />
+    <MetadataFile FileName="StreamService3.xsd" MetadataType="Schema" ID="3ab4f9db-13a7-4569-8d15-a1ff8d677029" SourceId="1" SourceUrl="http://localhost:8080/StreamService?xsd=xsd4" />
+    <MetadataFile FileName="StreamService4.xsd" MetadataType="Schema" ID="d80e67df-9d29-45d6-b732-1118f676edcd" SourceId="1" SourceUrl="http://localhost:8080/StreamService?xsd=xsd2" />
+    <MetadataFile FileName="Server1.wsdl" MetadataType="Wsdl" ID="07b975a1-19b4-42d5-9034-5aa384f1cdb4" SourceId="1" SourceUrl="http://localhost:8080/StreamService?wsdl" />
   </Metadata>
   <Extensions>
     <ExtensionFile FileName="configuration91.svcinfo" Name="configuration91.svcinfo" />
