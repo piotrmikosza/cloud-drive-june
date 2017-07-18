@@ -13,19 +13,17 @@ namespace client
     public class Client
     {
         const string dir = @"C:\From\";
-        private ServerClient wcfClient, wcfClient1;
+        private ServerClient wcfClient;
         private EndpointAddress endPoint;
-        private List<string> files = new List<string>();
-        private List<string> listSendFiles = new List<string>();
-        private List<string> receiveFiles = new List<string>();
+        private List<string> listMainFiles = new List<string>();
+        private List<string> listEditedFiles = new List<string>();
+        private List<string> listSendedFiles = new List<string>(); 
         private IList<FileContract> listFileContract;
         private DateTime lastModificationDate, modificationDate;
         bool isItConnected = false;
         bool invalid = true;
         FileSystemWatcher watcher = new FileSystemWatcher();
-        private static int i = 0, j = 0;
-        bool fileIsLocked = true;
-        private static int bajty = 0;
+        bool let = false;
 
         public Client()
         {
@@ -34,14 +32,15 @@ namespace client
                 Directory.CreateDirectory(dir);
             
             ConnectToService();
-            this.SetFileWatcher();
+            SetFileWatcher();
 
             var allFiles = GetAllFiles(dir);
-            if(isItConnected)
+
+            if (isItConnected)
             {
                 var watch = Stopwatch.StartNew();
 
-                //SendFiles(allFiles);
+                SendFiles(allFiles);
 
                 watch.Stop();
                 var elapsedMs = watch.ElapsedMilliseconds;
@@ -51,10 +50,9 @@ namespace client
                                         t.Minutes,
                                         t.Seconds,
                                         t.Milliseconds);
-                Console.WriteLine(answer);
 
 
-                //files.AddRange(allFiles);
+                listMainFiles.AddRange(allFiles);
                 lastModificationDate = DateTime.Now;
             } else
             {
@@ -76,49 +74,27 @@ namespace client
                     ConnectToService();
                 }*/
 
-                if (Console.ReadKey(true).Key == ConsoleKey.F4)
-                {
-                    for (int i = 0; i < 1; i++)
-                    {
-                        FileStream fs = new FileStream(@"C:\From\file"+i, FileMode.CreateNew);
-                        fs.Seek(2048L * 1024 * 1024 * 2, SeekOrigin.Begin);
-                        fs.WriteByte(0);
-                        fs.Close();
-                    }
-
-                }
-
                 if (Console.ReadKey(true).Key == ConsoleKey.F1)
                 {
                     DisplayFilesList();
                 }
-
-                if (Console.ReadKey(true).Key == ConsoleKey.F5)
-                {
-                    SendFiles();
-                }
+                
 
                 if (Console.ReadKey(true).Key == ConsoleKey.F2)
                 {
                     if(modificationDate > lastModificationDate)
                     {
-                        var watch = Stopwatch.StartNew();
-
-                        //SendFiles(listSendFiles);
-
-                        watch.Stop();
-                        var elapsedMs = watch.ElapsedMilliseconds;
-                        TimeSpan t = TimeSpan.FromMilliseconds(elapsedMs);
-                        string answer = string.Format("{0:D2}h:{1:D2}m:{2:D2}s:{3:D3}ms",
-                                                t.Hours,
-                                                t.Minutes,
-                                                t.Seconds,
-                                                t.Milliseconds);
-                        Console.WriteLine(answer);
+                        SendFiles(listSendedFiles);
+                        
+                        if(listEditedFiles.Count() != 0)
+                        {
+                            SendEditFile(listEditedFiles);
+                            listEditedFiles.Clear();
+                        }
 
                         lastModificationDate = modificationDate;
-                        files.AddRange(listSendFiles);
-                        listSendFiles.Clear();
+                        listMainFiles.AddRange(listSendedFiles);
+                        listSendedFiles.Clear();
                     }
                     DisplayFilesList();
                 }
@@ -141,27 +117,25 @@ namespace client
                                     Directory.CreateDirectory(dirname);
                                 }
                                 File.WriteAllBytes(path, fileContract.Bytes);
-                                files.Add(path);
+                                listMainFiles.Add(path);
                                 Console.WriteLine(path);
                             }
-                            /*else if (fileContract.FileStatus == Status.Modified)
+                            else if (fileContract.FileStatus == Status.Modified)
                             {
-                                Console.WriteLine("1");
                                 if (!Directory.Exists(dirname))
                                 {
-                                    Console.WriteLine("2");
                                     Directory.CreateDirectory(dirname);
                                 }
-                                if (!files.Any(file => file == path))
+                                if (!listMainFiles.Any(file => file == path))
                                 {
-                                    files.Add(path);
+                                    listMainFiles.Add(path);
                                 }
                                 File.WriteAllBytes(path, fileContract.Bytes);
-                            }*/
+                            }
                             else if (fileContract.FileStatus == Status.Deleted)
                             {
-                                this.DeleteFiles(path, false);
-                                this.DeleteDirectory(dir);
+                                DeleteFiles(path, false);
+                                DeleteDirectory(dir);
                             }
                             else if (fileContract.FileStatus == Status.Renamed)
                             {
@@ -171,17 +145,17 @@ namespace client
                                 var oldFileName = Path.GetFileName(oldPath);
                                 var fileName = Path.GetFileName(path);
 
-                                if (files.Any(file => file == oldPath) && oldFileName != fileName)
+                                if (listMainFiles.Any(file => file == oldPath) && oldFileName != fileName)
                                 {
                                     var newPath = Path.Combine(dir, fileContract.FilePath);
 
-                                    this.RenameFiles(oldPath, newPath, false);
+                                    RenameFiles(oldPath, newPath, false);
                                 }
                                 else
                                 {
                                     if (Directory.Exists(oldDirName))
                                     {
-                                        this.RenameFiles(oldDirName, dirname, false);
+                                        RenameFiles(oldDirName, dirname, false);
                                         break;
                                     }
                                     else
@@ -290,140 +264,30 @@ namespace client
             return localFiles;
         }
 
-        private void SendFiles(/*List<string> files*/)
+        private void SendFiles(List<string> files)
         {
 
-           // files.ForEach(file =>
-           // {
-                FileStream fs = new FileStream(@"C:/From/file0", FileMode.Open, FileAccess.Read);
-                long fLength = fs.Length;
-                Console.WriteLine("fLength " + fLength);
-                
-                int numBytesToRead = (int)fLength;
-                Console.WriteLine("numBytesToRead " + numBytesToRead);
-            int i = 0;
+            files.ForEach(file =>
+            { 
+                var bytes = File.ReadAllBytes(file);
 
-            int zmienna = 104857600;
-            
-            do
-            {
-                if (fLength > zmienna)
+                wcfClient.SetFile(new FileContract
                 {
-                    byte[] bytes = new byte[zmienna];
+                    FileStatus = Status.New,
+                    Bytes = bytes,
+                    FilePath = file.Substring(dir.Length)
+                });
 
-                    while (numBytesToRead > 0)
-                    {
-                        int n = fs.Read(bytes, 1, 10);
-
-                        // Break when the end of the file is reached.
-                        if (n == 0) break;
-
-                        bajty += n;
-                        numBytesToRead -= n;
-
-                        if (numBytesToRead != 0)
-                            numBytesToRead -= bajty;
-                    }
-
-                    bajty += zmienna;
-
-
-                    numBytesToRead = bytes.Length;
-
-                    wcfClient.SetFile(new FileContract
-                    {
-                        FileStatus = Status.New,
-                        Bytes = bytes,
-                        FilePath = @"/file0"
-                    });
-                    
-                }
-            } while (i != 2);
-
-            fs.Flush();
-            fs.Close();
-            fs.Dispose();
-
-            // Write the byte array to the other FileStream.
-            /*FileStream fsNew = new FileStream(@"C:/From/plik", FileMode.Create, FileAccess.Write);
-                fsNew.Write(bytes, 0, numBytesToRead);
-                fsNew.Flush();
-                fsNew.Close();
-                fsNew.Dispose();*/
-
-            //var bytess = File.ReadAllBytes(@"C:/From/file0");
-
-
-            Console.WriteLine("FINISH");
-            // });
-        }
-
-        private string GetSizeString(long length)
-        {
-            long B = 0, KB = 1024, MB = KB * 1024, GB = MB * 1024, TB = GB * 1024;
-            double size = length;
-            string suffix = nameof(B);
-
-            if (length >= TB)
-            {
-                size = Math.Round((double)length / TB, 2);
-                suffix = nameof(TB);
-            }
-            else if (length >= GB)
-            {
-                size = Math.Round((double)length / GB, 2);
-                suffix = nameof(GB);
-            }
-            else if (length >= MB)
-            {
-                size = Math.Round((double)length / MB, 2);
-                suffix = nameof(MB);
-            }
-            else if (length >= KB)
-            {
-                size = Math.Round((double)length / KB, 2);
-                suffix = nameof(KB);
-            }
-
-            return $"{size} {suffix}";
+            });
+                
         }
 
         private void SendFile(string file)
         {
-            files.Add(file);
-
-            byte[] bytes = null;
-
-            i++;
-            Console.WriteLine("Licznik i " + i);
-            Console.WriteLine("e.FullPath " + file);
-
-            do
-            {
-                try
-                {
-                    bytes = File.ReadAllBytes(file);
-                    fileIsLocked = false;
-                    Console.WriteLine("File is not locked " + i);
-                }
-                catch (IOException)
-                {
-                    Console.WriteLine("Plik jest używany przez inny proces " + i);
-                    fileIsLocked = true;
-                }
-            } while (fileIsLocked);
-
-            Console.WriteLine(bytes.Length);
-            Console.WriteLine(fileIsLocked);
+            
 
             var watch = Stopwatch.StartNew();
 
-            wcfClient.SetFile(new FileContract
-            {
-                FileStatus = Status.New,
-                Bytes = bytes,
-                FilePath = file.Substring(dir.Length)
-            });
 
             watch.Stop();
             var elapsedMs = watch.ElapsedMilliseconds;
@@ -433,13 +297,12 @@ namespace client
                                     t.Minutes,
                                     t.Seconds,
                                     t.Milliseconds);
-            Console.WriteLine(answer);
-            //watch.Reset();
         }
 
-        private void SendEditFile(string file)
+        private void SendEditFile(List<string> files)
         {
-            try
+
+            files.ForEach(file =>
             {
                 var bytes = File.ReadAllBytes(file);
 
@@ -449,13 +312,11 @@ namespace client
                     Bytes = bytes,
                     FilePath = file.Substring(dir.Length)
                 });
+
                 File.SetLastWriteTime(file, DateTime.Now);
-            }
-            catch (IOException)
-            {
-                Console.WriteLine("Another user is already using this file.");
-                //this.SendEditFile(file);
-            }
+
+            });
+            
         }
 
         private void DeleteDirectory(string sDir)
@@ -480,7 +341,7 @@ namespace client
         {
             bool itIsDirectory = false;
 
-            foreach (string file in files)
+            foreach (string file in listMainFiles)
             {
                 if(file.Equals(directory))
                 {
@@ -497,7 +358,7 @@ namespace client
                     {
                         File.Delete(directory);
                     }
-                    files.Remove(file);
+                    listMainFiles.Remove(file);
                     break;
                 } else
                 {
@@ -506,7 +367,7 @@ namespace client
             }
             if(itIsDirectory)
             {
-                foreach (string file in files)
+                foreach (string file in listMainFiles)
                 {
                     if (file.Contains(directory))
                     {
@@ -524,7 +385,7 @@ namespace client
                         }
                     }
                 }
-                files.RemoveAll(file => file.Contains(directory));
+                listMainFiles.RemoveAll(file => file.Contains(directory));
             }
         }
 
@@ -533,7 +394,7 @@ namespace client
 
             bool itIsDirectory = false;
 
-            foreach (string file in files)
+            foreach (string file in listMainFiles)
             {
                 if (file.Equals(oldPath))
                 {
@@ -552,8 +413,8 @@ namespace client
                         File.Move(oldPath, newPath);
                     }
 
-                    int index = files.FindIndex(f => f == oldPath);
-                    files[index] = newPath;
+                    int index = listMainFiles.FindIndex(f => f == oldPath);
+                    listMainFiles[index] = newPath;
                     File.SetLastWriteTime(newPath, DateTime.Now);
                     break;
                 }
@@ -567,11 +428,11 @@ namespace client
             if (itIsDirectory)
             {
                 List<int> indexes = new List<int>();
-                foreach (string file in files)
+                foreach (string file in listMainFiles)
                 {
                     if (file.Contains(oldPath))
                     {
-                        indexes.Add(files.IndexOf(file));
+                        indexes.Add(listMainFiles.IndexOf(file));
                     }
                 }
                 if(toSend)
@@ -588,9 +449,9 @@ namespace client
                 }
                 foreach (int i in indexes)
                 {
-                    var cutDir = files[i].Substring(oldPath.Length);
-                    files[i] = newPath + cutDir;
-                    File.SetLastWriteTime(files[i], DateTime.Now);
+                    var cutDir = listMainFiles[i].Substring(oldPath.Length);
+                    listMainFiles[i] = newPath + cutDir;
+                    File.SetLastWriteTime(listMainFiles[i], DateTime.Now);
                 }
             }
         }
@@ -624,8 +485,8 @@ namespace client
         {
             Console.Clear();
             Console.WriteLine("Wciśnij F2 by zsynchronizować pliki z serwera");
-            Console.WriteLine("Lista plików lokalnie: " + files.Count());
-            this.files.ForEach(x =>
+            Console.WriteLine("Lista plików lokalnie: " + listMainFiles.Count());
+            listMainFiles.ForEach(x =>
             {
                 Console.WriteLine(x + " " + File.GetLastWriteTime(x) + ":" + File.GetLastWriteTime(x).Millisecond);
             });
@@ -636,21 +497,44 @@ namespace client
             if (e.ChangeType == WatcherChangeTypes.Created) {
                 modificationDate = DateTime.Now;
                 if (!isItDirectory(e.FullPath))
-                    listSendFiles.Add(e.FullPath);
+                {
+                    let = true;
+                    listSendedFiles.Add(e.FullPath);
+                }
             }
             if (e.ChangeType == WatcherChangeTypes.Deleted)
             {
                 lastModificationDate = DateTime.Now;
-                this.DeleteFiles(e.FullPath, true);
-                this.DisplayFilesList();
+                DeleteFiles(e.FullPath, true);
             }
-            if (e.ChangeType == WatcherChangeTypes.Changed) { }
+            if (e.ChangeType == WatcherChangeTypes.Changed)
+            {
+                if(let)
+                {
+                    let = false;
+                } else
+                {
+                    let = true;
+                    if(File.Exists(e.FullPath))
+                    {
+                        if (listMainFiles.Any(file => file == e.FullPath))
+                        {
+                            var file = listMainFiles.Single(f => f == e.FullPath);
+                            modificationDate = DateTime.Now;
+                            if (!listEditedFiles.Any(f => f == e.FullPath))
+                                listEditedFiles.Add(e.FullPath);
+
+                        }
+                    }
+                }
+
+            }
         }
 
         private void OnRenamed(object source, RenamedEventArgs e)
         {
-            this.RenameFiles(e.OldFullPath, e.FullPath, true);
-            this.DisplayFilesList();
+            RenameFiles(e.OldFullPath, e.FullPath, true);
+            DisplayFilesList();
         }
 
         private String getIP()

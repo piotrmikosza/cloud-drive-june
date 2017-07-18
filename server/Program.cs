@@ -181,38 +181,11 @@ namespace server
                 Directory.CreateDirectory(dirname);
             }
 
-            //File.WriteAllBytes(path, fileContract.Bytes);
-            FileStream fsNew;
-            
-            if(FilesDb.Any(file => file.FilePath == fileContract.FilePath))
-            {
-                var file = FilesDb.Single(f => f.FilePath == fileContract.FilePath);
+            File.WriteAllBytes(path, fileContract.Bytes);
 
-                bajty += fileContract.Bytes.Length;
-
-                if(file.FileStatus == Status.New)
-                {
-                    fsNew = new FileStream(@"C:/To/file0", FileMode.Append, FileAccess.Write);
-                    fsNew.Write(fileContract.Bytes, bajty, fileContract.Bytes.Length);
-                    fsNew.Flush();
-                    fsNew.Close();
-                    fsNew.Dispose();
-
-                }
-            } else
-            {
-                fsNew = new FileStream(@"C:/To/file0", FileMode.Create, FileAccess.Write);
-                fsNew.Write(fileContract.Bytes, 0, fileContract.Bytes.Length);
-                fsNew.Flush();
-                fsNew.Close();
-                fsNew.Dispose();
-                FilesDb.Add(fileContract);
-            }
-
-
-
-            /*fileContract.LastModification = DateTime.Now;
+            fileContract.LastModification = DateTime.Now;
             fileContract.LastModification = fileContract.LastModification.AddTicks(-fileContract.LastModification.Ticks % TimeSpan.TicksPerSecond);
+            FilesDb.Add(fileContract);
 
             if (FilesDb.Any(file => file.FilePath == fileContract.FilePath))
             {
@@ -221,9 +194,9 @@ namespace server
             } else
             {
                 
-            }*/
+            }
 
-            //this.DisplayFilesList();
+            this.DisplayFilesList();
         }
 
         private void DeleteDirectory(string sDir)
