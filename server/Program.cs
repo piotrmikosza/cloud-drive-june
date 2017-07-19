@@ -44,6 +44,22 @@ namespace server
 
             host.Open();
 
+            NetTcpBinding netTCPbinding = new NetTcpBinding();
+            netTCPbinding.TransferMode = TransferMode.Streamed;
+            netTCPbinding.MaxReceivedMessageSize = Int32.MaxValue;
+            netTCPbinding.CloseTimeout = TimeSpan.MaxValue;
+
+            host.AddServiceEndpoint(typeof(Server
+), netTCPbinding, new Uri("http://192.168.1.6"));
+            host.Description.Behaviors.Add(new ServiceMetadataBehavior());
+            Binding mexBinding = MetadataExchangeBindings.CreateMexTcpBinding();
+            serviceHost.AddServiceEndpoint(typeof(IMetadataExchange), mexBinding, new Uri(mexURI));
+
+            serviceHost.Open();
+            Console.WriteLine("Service Just Started ... Press any Key to Stop");
+            Console.Read();
+            serviceHost.Close();
+
             Console.WriteLine("Server is ready...");
             Console.ReadLine();
         }
@@ -78,8 +94,6 @@ namespace server
         string SendMessage(string command, string value);
 
     }
-
-
 
     [DataContract]
     public class FileContract

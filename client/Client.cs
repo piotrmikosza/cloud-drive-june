@@ -79,6 +79,13 @@ namespace client
                     DisplayFilesList();
                 }
                 
+                if (Console.ReadKey(true).Key == ConsoleKey.F4)
+                {
+                    FileStream fs = new FileStream(@"C:\From\file", FileMode.CreateNew);
+                    fs.Seek(2048L * 1024 * 512, SeekOrigin.Begin);
+                    fs.WriteByte(0);
+                    fs.Close();
+                }
 
                 if (Console.ReadKey(true).Key == ConsoleKey.F2)
                 {
@@ -185,8 +192,8 @@ namespace client
 
                 try
                 {
-                    //endPoint = new EndpointAddress("http://192.168.1.7");
-                    wcfClient = new ServerClient(/*"basicEndpoint", endPoint*/);
+                    endPoint = new EndpointAddress("http://192.168.1.6");
+                    wcfClient = new ServerClient("basicEndpoint", endPoint);
                     Console.WriteLine(wcfClient.SendMessage("login", getIP()));
                     invalid = false;
                 }
@@ -284,7 +291,14 @@ namespace client
 
         private void SendFile(string file)
         {
-            
+            var bytes = File.ReadAllBytes(file);
+            wcfClient.SetFile(new FileContract
+            {
+                FileStatus = Status.New,
+                Bytes = bytes,
+                FilePath = file.Substring(dir.Length)
+            });
+
 
             var watch = Stopwatch.StartNew();
 
@@ -500,6 +514,10 @@ namespace client
                 {
                     let = true;
                     listSendedFiles.Add(e.FullPath);
+                    Console.WriteLine("Wysyłam");
+                    SendFile(e.FullPath);
+                    Console.WriteLine("Koniec wysyłania");
+                    Console.ReadLine();
                 }
             }
             if (e.ChangeType == WatcherChangeTypes.Deleted)
@@ -523,7 +541,6 @@ namespace client
                             modificationDate = DateTime.Now;
                             if (!listEditedFiles.Any(f => f == e.FullPath))
                                 listEditedFiles.Add(e.FullPath);
-
                         }
                     }
                 }
